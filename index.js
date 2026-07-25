@@ -71,3 +71,112 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
+  // Register Button
+  if (interaction.isButton() && interaction.customId === "register") {
+
+    const modal = new ModalBuilder()
+      .setCustomId("register_modal")
+      .setTitle("Player Register");
+
+    const ign = new TextInputBuilder()
+      .setCustomId("ign")
+      .setLabel("Minecraft Username")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const region = new TextInputBuilder()
+      .setCustomId("region")
+      .setLabel("Region")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const account = new TextInputBuilder()
+      .setCustomId("account")
+      .setLabel("Account Type (Premium / Cracked)")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(ign),
+      new ActionRowBuilder().addComponents(region),
+      new ActionRowBuilder().addComponents(account)
+    );
+
+    return interaction.showModal(modal);
+  }
+
+  // Modal Submit
+  if (interaction.isModalSubmit() && interaction.customId === "register_modal") {
+
+    const ign = interaction.fields.getTextInputValue("ign");
+    const region = interaction.fields.getTextInputValue("region");
+    const account = interaction.fields.getTextInputValue("account");
+
+    await db.set(`user_${interaction.user.id}`, {
+      ign,
+      region,
+      account,
+      gamemode: null
+    });
+
+    try {
+      await interaction.member.roles.add(config.queueRole);
+    } catch (err) {
+      console.log(err);
+    }
+
+    const row1 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("uhc")
+        .setLabel("UHC")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("pot")
+        .setLabel("Pot")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("mace")
+        .setLabel("Mace")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("nethop")
+        .setLabel("NetHop")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("smp")
+        .setLabel("SMP")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
+    const row2 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("sword")
+        .setLabel("Sword")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("axe")
+        .setLabel("Axe")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("vanilla")
+        .setLabel("Vanilla")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("cart")
+        .setLabel("Cart")
+        .setStyle(ButtonStyle.Secondary)
+    );
+
+    return interaction.reply({
+      content: "✅ Registration complete!\n\nNow choose your gamemode.",
+      components: [row1, row2],
+      ephemeral: true
+    });
+  }
