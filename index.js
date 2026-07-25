@@ -8,6 +8,7 @@ const {
   Client,
   Collection,
   GatewayIntentBits,
+  Events,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -52,7 +53,7 @@ for (const file of commandFiles) {
   }
 }
 
-client.once("ready", () => {
+client.once(Events.ClientReady, () => {
   console.log(`${client.user.tag} is online!`);
 });
 
