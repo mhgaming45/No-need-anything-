@@ -269,3 +269,101 @@ client.on("interactionCreate", async (interaction) => {
       ephemeral: true
     });
   }
+  // Claim / Pass / Fail Buttons
+  if (interaction.isButton()) {
+
+    const [action, userId] = interaction.customId.split("_");
+
+    if (!["claim", "pass", "fail"].includes(action)) return;
+
+    if (action === "claim") {
+
+      return interaction.reply({
+        content: `✅ Queue claimed by ${interaction.user}.`,
+        ephemeral: false
+      });
+
+    }
+
+    if (action === "pass") {
+
+      try {
+        const member = await interaction.guild.members.fetch(userId);
+
+        await member.roles.remove(config.queueRole).catch(() => {});
+
+        const logChannel = client.channels.cache.get(config.logChannel);
+
+        if (logChannel) {
+
+          const embed = new EmbedBuilder()
+            .setColor("Green")
+            .setTitle("✅ Test Passed")
+            .addFields(
+              { name: "Player", value: `<@${userId}>` },
+              { name: "Tester", value: `${interaction.user}` }
+            )
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [embed] });
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
+
+      return interaction.reply({
+        content: "✅ Player marked as PASS.",
+        ephemeral: true
+      });
+
+    }
+
+    if (action === "fail") {
+
+      try {
+        const member = await interaction.guild.members.fetch(userId);
+
+        await member.roles.remove(config.queueRole).catch(() => {});
+
+        const logChannel = client.channels.cache.get(config.logChannel);
+
+        if (logChannel) {
+
+          const embed = new EmbedBuilder()
+            .setColor("Red")
+            .setTitle("❌ Test Failed")
+            .addFields(
+              { name: "Player", value: `<@${userId}>` },
+              { name: "Tester", value: `${interaction.user}` }
+            )
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [embed] });
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
+
+      return interaction.reply({
+        content: "❌ Player marked as FAIL.",
+        ephemeral: true
+      });
+
+    }
+
+  }
+
+});
+
+// Login
+client.login(process.env.TOKEN);
+
+// Web Server
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end("Bot Online");
+}).listen(process.env.PORT || 3000, () => {
+  console.log("Web server started.");
+});
