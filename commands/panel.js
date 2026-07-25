@@ -9,41 +9,48 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("panel")
-    .setDescription("Send register panel"),
+    .setDescription("Send Register Panel"),
 
   async execute(interaction) {
 
     const embed = new EmbedBuilder()
-      .setTitle("📝 Player Registration")
+      .setColor("#5865F2")
+      .setTitle("📝 Register Testing")
       .setDescription(
-`Click the **Register / Update** button below.
+`Click the button below to register for testing.
 
-After completing the form, you'll be able to choose your gamemode.
+After registering you can choose your gamemode.
 
-Available Gamemodes:
-• UHC
-• Pot
-• Mace
-• NetHop
-• SMP
-• Sword
-• Axe
-• Vanilla
-• Cart`
-      )
-      .setColor("Blue");
+━━━━━━━━━━━━━━━━━━`
+      );
 
-    const row = new ActionRowBuilder().addComponents(
+    const register = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("register")
         .setLabel("Register / Update")
-        .setStyle(ButtonStyle.Success)
         .setEmoji("📝")
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    const row1 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("uhc").setLabel("UHC").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("pot").setLabel("Pot").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("mace").setLabel("Mace").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("nethop").setLabel("NetHop").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("smp").setLabel("SMP").setStyle(ButtonStyle.Secondary)
+    );
+
+    const row2 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("sword").setLabel("Sword").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("axe").setLabel("Axe").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("vanilla").setLabel("Vanilla").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("cart").setLabel("Cart").setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({
       embeds: [embed],
-      components: [row]
+      components: [register, row1, row2]
     });
+
   }
 };
