@@ -307,9 +307,7 @@ if (interaction.isButton()) {
       content: `✅ You selected **${interaction.customId.toUpperCase()}**.\nYour request has been sent to the queue.`,
       ephemeral: true
     });
-  }
-}
-  }
+
 
   return interaction.reply({
     content: `✅ You selected **${interaction.customId.toUpperCase()}**.\nYour request has been sent to the queue.`,
