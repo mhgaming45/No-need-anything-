@@ -18,9 +18,21 @@ const {
   EmbedBuilder
 } = require("discord.js");
 
-const db = require("./database");
-
 const config = require("./config/config.json");
+
+const DB_FILE = "./database.json";
+
+function loadDB() {
+  if (!fs.existsSync(DB_FILE)) {
+    fs.writeFileSync(DB_FILE, "{}");
+  }
+
+  return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+}
+
+function saveDB(data) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+}
 
 const queueChannels = {
   uhc: config.queueChannels.uhc,
@@ -40,7 +52,6 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load Commands
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
@@ -58,9 +69,9 @@ client.once(Events.ClientReady, () => {
 
 client.on("interactionCreate", async (interaction) => {
 
-  // Slash Commands
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
+
     if (!command) return;
 
     try {
@@ -71,7 +82,7 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
-  // Register Button
+
   if (interaction.isButton() && interaction.customId === "register") {
 
     const modal = new ModalBuilder()
@@ -104,7 +115,6 @@ client.on("interactionCreate", async (interaction) => {
 
     return interaction.showModal(modal);
   }
-
   // Modal Submit
   if (interaction.isModalSubmit() && interaction.customId === "register_modal") {
 
@@ -112,12 +122,16 @@ client.on("interactionCreate", async (interaction) => {
     const region = interaction.fields.getTextInputValue("region");
     const account = interaction.fields.getTextInputValue("account");
 
-    await db.set(`user_${interaction.user.id}`, {
+    const db = loadDB();
+
+    db[`user_${interaction.user.id}`] = {
       ign,
       region,
       account,
       gamemode: null
-    });
+    };
+
+    saveDB(db);
 
     try {
       await interaction.member.roles.add(config.queueRole);
@@ -180,95 +194,101 @@ client.on("interactionCreate", async (interaction) => {
       ephemeral: true
     });
   }
-  // Gamemode Buttons
-  if (interaction.isButton()) {
+// Gamemode Buttons
+if (interaction.isButton()) {
 
-    const gamemodes = [
-      "uhc",
-      "pot",
-      "mace",
-      "nethop",
-      "smp",
-      "sword",
-      "axe",
-      "vanilla",
-      "cart"
-    ];
+  const gamemodes = [
+    "uhc",
+    "pot",
+    "mace",
+    "nethop",
+    "smp",
+    "sword",
+    "axe",
+    "vanilla",
+    "cart"
+  ];
 
-    if (!gamemodes.includes(interaction.customId)) return;
+  if (!gamemodes.includes(interaction.customId)) return;
 
-    const data = await db.get(`user_${interaction.user.id}`);
+  const db = loadDB();
+  const data = db[`user_${interaction.user.id}`];
 
-    if (!data) {
-      return interaction.reply({
-        content: "❌ Please register first.",
-        ephemeral: true
-      });
-    }
-
-    // Save Gamemode
-    data.gamemode = interaction.customId;
-    await db.set(`user_${interaction.user.id}`, data);
-
-    // Remove old gamemode roles
-    for (const id of Object.values(config.roles)) {
-      if (interaction.member.roles.cache.has(id)) {
-        await interaction.member.roles.remove(id).catch(() => {});
-      }
-    }
-
-    // Give selected role
-    await interaction.member.roles
-      .add(config.roles[interaction.customId])
-      .catch(() => {});
-
-    // Send queue message
-    const channel = client.channels.cache.get(
-      queueChannels[interaction.customId]
-    );
-
-    if (channel) {
-
-      const embed = new EmbedBuilder()
-        .setColor("Blue")
-        .setTitle("📝 New Testing Queue")
-        .addFields(
-          { name: "Player", value: `<@${interaction.user.id}>`, inline: false },
-          { name: "IGN", value: data.ign, inline: true },
-          { name: "Region", value: data.region, inline: true },
-          { name: "Account", value: data.account, inline: true },
-          { name: "Gamemode", value: interaction.customId.toUpperCase(), inline: true }
-        )
-        .setTimestamp();
-
-      const buttons = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`claim_${interaction.user.id}`)
-          .setLabel("Claim")
-          .setStyle(ButtonStyle.Primary),
-
-        new ButtonBuilder()
-          .setCustomId(`pass_${interaction.user.id}`)
-          .setLabel("Pass")
-          .setStyle(ButtonStyle.Success),
-
-        new ButtonBuilder()
-          .setCustomId(`fail_${interaction.user.id}`)
-          .setLabel("Fail")
-          .setStyle(ButtonStyle.Danger)
-      );
-
-      await channel.send({
-        embeds: [embed],
-        components: [buttons]
-      });
-    }
-
+  if (!data) {
     return interaction.reply({
-      content: `✅ You selected **${interaction.customId.toUpperCase()}**.\nYour testing request has been sent to the queue.`,
+      content: "❌ Please register first.",
       ephemeral: true
     });
   }
+
+  // Save Gamemode
+  data.gamemode = interaction.customId;
+  db[`user_${interaction.user.id}`] = data;
+  saveDB(db);
+
+  // Remove old gamemode roles
+  for (const id of Object.values(config.roles)) {
+    if (interaction.member.roles.cache.has(id)) {
+      await interaction.member.roles.remove(id).catch(() => {});
+    }
+  }
+
+  // Give selected role
+  await interaction.member.roles
+    .add(config.roles[interaction.customId])
+    .catch(() => {});
+
+  // Queue Channel
+  const channel = client.channels.cache.get(
+    queueChannels[interaction.customId]
+  );
+
+  if (channel) {
+
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle("📝 New Testing Queue")
+      .addFields(
+        { name: "Player", value: `<@${interaction.user.id}>` },
+        { name: "IGN", value: data.ign, inline: true },
+        { name: "Region", value: data.region, inline: true },
+        { name: "Account", value: data.account, inline: true },
+        {
+          name: "Gamemode",
+          value: interaction.customId.toUpperCase(),
+          inline: true
+        }
+      )
+      .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`claim_${interaction.user.id}`)
+        .setLabel("Claim")
+        .setStyle(ButtonStyle.Primary),
+
+      new ButtonBuilder()
+        .setCustomId(`pass_${interaction.user.id}`)
+        .setLabel("Pass")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId(`fail_${interaction.user.id}`)
+        .setLabel("Fail")
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    await channel.send({
+      embeds: [embed],
+      components: [row]
+    });
+  }
+
+  return interaction.reply({
+    content: `✅ You selected **${interaction.customId.toUpperCase()}**.\nYour request has been sent to the queue.`,
+    ephemeral: true
+  });
+}
   // Claim / Pass / Fail Buttons
   if (interaction.isButton()) {
 
@@ -277,12 +297,10 @@ client.on("interactionCreate", async (interaction) => {
     if (!["claim", "pass", "fail"].includes(action)) return;
 
     if (action === "claim") {
-
       return interaction.reply({
         content: `✅ Queue claimed by ${interaction.user}.`,
         ephemeral: false
       });
-
     }
 
     if (action === "pass") {
@@ -308,15 +326,19 @@ client.on("interactionCreate", async (interaction) => {
           await logChannel.send({ embeds: [embed] });
         }
 
+        return interaction.reply({
+          content: "✅ Player marked as PASS.",
+          ephemeral: true
+        });
+
       } catch (err) {
         console.log(err);
+
+        return interaction.reply({
+          content: "❌ Error while marking PASS.",
+          ephemeral: true
+        });
       }
-
-      return interaction.reply({
-        content: "✅ Player marked as PASS.",
-        ephemeral: true
-      });
-
     }
 
     if (action === "fail") {
@@ -342,22 +364,25 @@ client.on("interactionCreate", async (interaction) => {
           await logChannel.send({ embeds: [embed] });
         }
 
+        return interaction.reply({
+          content: "❌ Player marked as FAIL.",
+          ephemeral: true
+        });
+
       } catch (err) {
         console.log(err);
+
+        return interaction.reply({
+          content: "❌ Error while marking FAIL.",
+          ephemeral: true
+        });
       }
-
-      return interaction.reply({
-        content: "❌ Player marked as FAIL.",
-        ephemeral: true
-      });
-
     }
 
   }
 
 });
 
-// Login
 client.login(process.env.TOKEN);
 
 // Web Server
