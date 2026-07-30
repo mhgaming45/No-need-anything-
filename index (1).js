@@ -157,3 +157,69 @@ client.on("interactionCreate", async (interaction) => {
 
     return;
   }
+  // ================================
+  // REGISTER BUTTON
+  // ================================
+
+  if (
+    interaction.isButton() &&
+    interaction.customId === "register"
+  ) {
+
+    const modal = new ModalBuilder()
+      .setCustomId("register_modal")
+      .setTitle("Player Register");
+
+    const ign = new TextInputBuilder()
+      .setCustomId("ign")
+      .setLabel("Minecraft Username")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const region = new TextInputBuilder()
+      .setCustomId("region")
+      .setLabel("Region")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const account = new TextInputBuilder()
+      .setCustomId("account")
+      .setLabel("Account Type")
+      .setPlaceholder("Premium / Cracked")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(ign),
+      new ActionRowBuilder().addComponents(region),
+      new ActionRowBuilder().addComponents(account)
+    );
+
+    return interaction.showModal(modal);
+  }
+
+  // ================================
+  // REGISTER MODAL
+  // ================================
+
+  if (
+    interaction.isModalSubmit() &&
+    interaction.customId === "register_modal"
+  ) {
+
+    const db = loadDB();
+
+    db[`user_${interaction.user.id}`] = {
+      ign: interaction.fields.getTextInputValue("ign"),
+      region: interaction.fields.getTextInputValue("region"),
+      account: interaction.fields.getTextInputValue("account"),
+      gamemode: null
+    };
+
+    saveDB(db);
+
+    if (config.queueRole) {
+      await interaction.member.roles
+        .add(config.queueRole)
+        .catch(() => {});
+    }
