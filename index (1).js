@@ -223,3 +223,63 @@ client.on("interactionCreate", async (interaction) => {
         .add(config.queueRole)
         .catch(() => {});
     }
+  // ================================
+  // GAMEMODE BUTTONS + QUEUE
+  // ================================
+
+  if (interaction.isButton()) {
+
+    const gamemodes = [
+      "uhc",
+      "pot",
+      "mace",
+      "nethop",
+      "smp",
+      "sword",
+      "axe",
+      "vanilla",
+      "cart"
+    ];
+
+    if (!gamemodes.includes(interaction.customId)) return;
+
+    const gamemode = interaction.customId;
+    const db = loadDB();
+    const data = db[`user_${interaction.user.id}`];
+
+    if (!data) {
+      return interaction.reply({
+        content: "❌ Please register first.",
+        ephemeral: true
+      });
+    }
+
+    // Already in queue check
+    if (queues[gamemode].includes(interaction.user.id)) {
+      const position =
+        queues[gamemode].indexOf(interaction.user.id) + 1;
+
+      return interaction.reply({
+        content:
+          `📋 You are already in the **${gamemode.toUpperCase()}** queue.\n\n` +
+          `🏆 Your Queue Position: **#${position}**`,
+        ephemeral: true
+      });
+    }
+
+    // Add player
+    queues[gamemode].push(interaction.user.id);
+
+    data.gamemode = gamemode;
+    saveDB(db);
+
+    const position = queues[gamemode].length;
+
+    return interaction.reply({
+      content:
+        `✅ You joined the **${gamemode.toUpperCase()}** queue!\n\n` +
+        `📋 Your Queue Position: **#${position}**\n` +
+        `👥 Players Ahead: **${position - 1}**`,
+      ephemeral: true
+    });
+  }
