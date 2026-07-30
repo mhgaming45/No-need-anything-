@@ -521,13 +521,192 @@ if (interaction.isModalSubmit()) {
 
   if (interaction.customId.startsWith("pass_modal_")) {
 
-    // 👇 Iske baad Part 3 aayega
-    return;
-  }
+        // ================================
+    // PASS MODAL SUBMIT
+    // ================================
+
+    if (interaction.customId.startsWith("pass_modal_")) {
+
+      const userId =
+        interaction.customId.replace("pass_modal_", "");
+
+      const rankBefore =
+        interaction.fields.getTextInputValue("rank_before");
+
+      const rankEarned =
+        interaction.fields.getTextInputValue("rank_earned");
+
+      const notes =
+        interaction.fields.getTextInputValue("notes") ||
+        "No notes provided.";
+
+      const db = loadDB();
+      const data = db[`user_${userId}`];
+
+      if (!data) {
+        return interaction.reply({
+          content: "❌ Player data not found.",
+          ephemeral: true
+        });
+      }
+
+      // Remove from queue
+      if (queues[data.gamemode]) {
+        queues[data.gamemode] =
+          queues[data.gamemode].filter(
+            id => id !== userId
+          );
+      }
+
+      // Remove Queue Role
+      try {
+
+        const member =
+          await interaction.guild.members.fetch(userId);
+
+        if (config.queueRole) {
+          await member.roles
+            .remove(config.queueRole)
+            .catch(() => {});
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
+
+      const resultChannel =
+        client.channels.cache.get(config.logChannel);
+
+      if (resultChannel) {
+        const resultEmbed = new EmbedBuilder()
+          .setColor("Green")
+          .setTitle(`🏆 ${data.ign}'s Test Results`)
+          .addFields(
+            {
+              name: "Player",
+              value: `<@${userId}>`
+            },
+            {
+              name: "Tester",
+              value: `${interaction.user}`
+            },
+            {
+              name: "Rank Before",
+              value: rankBefore,
+              inline: true
+            },
+            {
+              name: "Rank Earned",
+              value: rankEarned,
+              inline: true
+            },
+            {
+              name: "Gamemode",
+              value: data.gamemode.toUpperCase(),
+              inline: true
+            },
+            {
+              name: "Notes",
+              value: notes
+            }
+          )
+          .setTimestamp();
+
+        await resultChannel.send({
+          embeds: [resultEmbed]
+        });
+      }
+
+      return interaction.reply({
+        content:
+          `✅ **${data.ign}** has passed!\n🏆 Rank Earned: **${rankEarned}**`,
+        ephemeral: true
+      });
+
+    }
 
   if (interaction.customId.startsWith("fail_modal_")) {
 
-    // 👇 Iske baad Part 3 me code aayega
-    return;
+          const userId =
+        interaction.customId.replace("fail_modal_", "");
+
+      const reason =
+        interaction.fields.getTextInputValue("reason");
+
+      const db = loadDB();
+      const data = db[`user_${userId}`];
+
+      if (!data) {
+        return interaction.reply({
+          content: "❌ Player data not found.",
+          ephemeral: true
+        });
+      }
+
+      // Remove from queue
+      if (queues[data.gamemode]) {
+        queues[data.gamemode] =
+          queues[data.gamemode].filter(
+            id => id !== userId
+          );
+      }
+
+      // Remove Queue Role
+      try {
+
+        const member =
+          await interaction.guild.members.fetch(userId);
+
+        if (config.queueRole) {
+          await member.roles
+            .remove(config.queueRole)
+            .catch(() => {});
+        }
+
+      } catch (err) {
+        console.log(err);
+      }
+
+      const resultChannel =
+        client.channels.cache.get(config.logChannel);
+
+      if (resultChannel) {
+
+        const resultEmbed = new EmbedBuilder()
+          .setColor("Red")
+          .setTitle(`❌ ${data.ign}'s Test Results`)
+          .addFields(
+            {
+              name: "Player",
+              value: `<@${userId}>`
+            },
+            {
+              name: "Tester",
+              value: `${interaction.user}`
+            },
+            {
+              name: "Gamemode",
+              value: data.gamemode.toUpperCase(),
+              inline: true
+            },
+            {
+              name: "Failure Reason",
+              value: reason
+            }
+          )
+          .setTimestamp();
+
+        await resultChannel.send({
+          embeds: [resultEmbed]
+        });
+      }
+
+      return interaction.reply({
+        content:
+          `❌ **${data.ign}** has failed.\nReason: **${reason}**`,
+        ephemeral: true
+      });
+
+    }
   }
 }
