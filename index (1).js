@@ -283,3 +283,11 @@ client.on("interactionCreate", async (interaction) => {
       ephemeral: true
     });
   }
+  }
+});
+
+// ================================
+// LOGIN
+// ================================
+
+client.login(process.env.TOKEN);
