@@ -398,3 +398,136 @@ if (interaction.isButton()) {
     });
   }
 }
+// ================================
+// CLAIM / PASS / FAIL BUTTONS
+// ================================
+
+if (interaction.isButton()) {
+
+  const parts = interaction.customId.split("_");
+
+  if (parts.length < 2) return;
+
+  const action = parts[0];
+  const userId = parts[1];
+
+  if (!["claim", "pass", "fail"].includes(action)) return;
+
+  // ================================
+  // CLAIM BUTTON
+  // ================================
+
+  if (action === "claim") {
+
+    const oldEmbed = interaction.message.embeds[0];
+
+    const embed = EmbedBuilder.from(oldEmbed)
+      .setFooter({
+        text: `Claimed by ${interaction.user.tag}`
+      });
+
+    const row = new ActionRowBuilder().addComponents(
+
+      new ButtonBuilder()
+        .setCustomId(`claim_${userId}`)
+        .setLabel("Claimed")
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true),
+
+      new ButtonBuilder()
+        .setCustomId(`pass_${userId}`)
+        .setLabel("Pass")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId(`fail_${userId}`)
+        .setLabel("Fail")
+        .setStyle(ButtonStyle.Danger)
+
+    );
+
+    await interaction.update({
+      embeds: [embed],
+      components: [row]
+    });
+
+    return;
+  }
+
+  // ================================
+  // PASS BUTTON
+  // ================================
+
+  if (action === "pass") {
+
+    const modal = new ModalBuilder()
+      .setCustomId(`pass_modal_${userId}`)
+      .setTitle("Test Passed");
+
+    const before = new TextInputBuilder()
+      .setCustomId("rank_before")
+      .setLabel("Rank Before")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const earned = new TextInputBuilder()
+      .setCustomId("rank_earned")
+      .setLabel("Rank Earned")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+
+    const notes = new TextInputBuilder()
+      .setCustomId("notes")
+      .setLabel("Notes")
+      .setStyle(TextInputStyle.Paragraph)
+      .setRequired(false);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(before),
+      new ActionRowBuilder().addComponents(earned),
+      new ActionRowBuilder().addComponents(notes)
+    );
+
+    return interaction.showModal(mod
+  // ================================
+  // FAIL BUTTON
+  // ================================
+
+  if (action === "fail") {
+
+    const modal = new ModalBuilder()
+      .setCustomId(`fail_modal_${userId}`)
+      .setTitle("Test Failed");
+
+    const reason = new TextInputBuilder()
+      .setCustomId("reason")
+      .setLabel("Failure Reason")
+      .setStyle(TextInputStyle.Paragraph)
+      .setRequired(true);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(reason)
+    );
+
+    return interaction.showModal(modal);
+  }
+}
+
+// ================================
+// PASS / FAIL MODALS
+// ================================
+
+if (interaction.isModalSubmit()) {
+
+  if (interaction.customId.startsWith("pass_modal_")) {
+
+    // 👇 Iske baad Part 3 aayega
+    return;
+  }
+
+  if (interaction.customId.startsWith("fail_modal_")) {
+
+    // 👇 Iske baad Part 3 me code aayega
+    return;
+  }
+}
