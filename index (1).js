@@ -212,79 +212,103 @@ if (interaction.isButton()) {
     "cart"
   ];
 
-  if (!gamemodes.includes(interaction.customId)) return;
+  // Only handle gamemode buttons here
+  if (gamemodes.includes(interaction.customId)) {
 
-  const db = loadDB();
-  const data = db[`user_${interaction.user.id}`];
+    const db = loadDB();
+    const data = db[`user_${interaction.user.id}`];
 
-  if (!data) {
+    if (!data) {
+      return interaction.reply({
+        content: "❌ Please register first.",
+        ephemeral: true
+      });
+    }
+
+    // Save Gamemode
+    data.gamemode = interaction.customId;
+    db[`user_${interaction.user.id}`] = data;
+    saveDB(db);
+
+    // Remove old gamemode roles
+    for (const id of Object.values(config.roles)) {
+      if (interaction.member.roles.cache.has(id)) {
+        await interaction.member.roles.remove(id).catch(() => {});
+      }
+    }
+
+    // Give selected role
+    await interaction.member.roles
+      .add(config.roles[interaction.customId])
+      .catch(() => {});
+
+    // Queue Channel
+    const channel = client.channels.cache.get(
+      queueChannels[interaction.customId]
+    );
+
+    if (channel) {
+
+      const embed = new EmbedBuilder()
+        .setColor("Blue")
+        .setTitle("📝 New Testing Queue")
+        .addFields(
+          {
+            name: "Player",
+            value: `<@${interaction.user.id}>`
+          },
+          {
+            name: "IGN",
+            value: data.ign,
+            inline: true
+          },
+          {
+            name: "Region",
+            value: data.region,
+            inline: true
+          },
+          {
+            name: "Account",
+            value: data.account,
+            inline: true
+          },
+          {
+            name: "Gamemode",
+            value: interaction.customId.toUpperCase(),
+            inline: true
+          }
+        )
+        .setTimestamp();
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`claim_${interaction.user.id}`)
+          .setLabel("Claim")
+          .setStyle(ButtonStyle.Primary),
+
+        new ButtonBuilder()
+          .setCustomId(`pass_${interaction.user.id}`)
+          .setLabel("Pass")
+          .setStyle(ButtonStyle.Success),
+
+        new ButtonBuilder()
+          .setCustomId(`fail_${interaction.user.id}`)
+          .setLabel("Fail")
+          .setStyle(ButtonStyle.Danger)
+      );
+
+      await channel.send({
+        embeds: [embed],
+        components: [row]
+      });
+    }
+
     return interaction.reply({
-      content: "❌ Please register first.",
+      content: `✅ You selected **${interaction.customId.toUpperCase()}**.\nYour request has been sent to the queue.`,
       ephemeral: true
     });
   }
-
-  // Save Gamemode
-  data.gamemode = interaction.customId;
-  db[`user_${interaction.user.id}`] = data;
-  saveDB(db);
-
-  // Remove old gamemode roles
-  for (const id of Object.values(config.roles)) {
-    if (interaction.member.roles.cache.has(id)) {
-      await interaction.member.roles.remove(id).catch(() => {});
-    }
-  }
-
-  // Give selected role
-  await interaction.member.roles
-    .add(config.roles[interaction.customId])
-    .catch(() => {});
-
-  // Queue Channel
-  const channel = client.channels.cache.get(
-    queueChannels[interaction.customId]
-  );
-
-  if (channel) {
-
-    const embed = new EmbedBuilder()
-      .setColor("Blue")
-      .setTitle("📝 New Testing Queue")
-      .addFields(
-        { name: "Player", value: `<@${interaction.user.id}>` },
-        { name: "IGN", value: data.ign, inline: true },
-        { name: "Region", value: data.region, inline: true },
-        { name: "Account", value: data.account, inline: true },
-        {
-          name: "Gamemode",
-          value: interaction.customId.toUpperCase(),
-          inline: true
-        }
-      )
-      .setTimestamp();
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`claim_${interaction.user.id}`)
-        .setLabel("Claim")
-        .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setCustomId(`pass_${interaction.user.id}`)
-        .setLabel("Pass")
-        .setStyle(ButtonStyle.Success),
-
-      new ButtonBuilder()
-        .setCustomId(`fail_${interaction.user.id}`)
-        .setLabel("Fail")
-        .setStyle(ButtonStyle.Danger)
-    );
-
-    await channel.send({
-      embeds: [embed],
-      components: [row]
-    });
+}
   }
 
   return interaction.reply({
