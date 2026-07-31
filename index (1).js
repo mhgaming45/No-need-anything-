@@ -1088,6 +1088,15 @@ if (
       .catch(() => {});
   }
 
+// SEND TIER LOG
+await sendTestLog({
+  tester: interaction.user,
+  playerId: userId,
+  result: "PASS",
+  tier: tier,
+  mode: data.lastTestMode || null
+});
+
   return interaction.reply({
     content:
       `🏆 **Tier Updated!**\n\n` +
