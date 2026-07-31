@@ -1,38 +1,45 @@
 require("dotenv").config();
 
-const { REST, Routes, SlashCommandBuilder } = require("discord.js");
+const {
+REST,
+Routes,
+SlashCommandBuilder
+} = require("discord.js");
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName("panel")
-    .setDescription("Send the register panel")
-    .toJSON(),
 
-  new SlashCommandBuilder()
-    .setName("queue")
-    .setDescription("Send Testing Queue Panel")
-    .toJSON(),
+new SlashCommandBuilder()
+.setName("panel")
+.setDescription("Register Panel"),
 
-  new SlashCommandBuilder()
-    .setName("testerpanel")
-    .setDescription("Send Tester Panel")
-    .toJSON(),
-];
+new SlashCommandBuilder()
+.setName("queue")
+.setDescription("Queue Panel"),
 
-const rest = new REST({ version: "10" })
-  .setToken(process.env.TOKEN);
+new SlashCommandBuilder()
+.setName("testerpanel")
+.setDescription("Tester Panel")
 
-(async () => {
-  try {
-    console.log("Registering slash commands...");
+].map(c=>c.toJSON());
 
-    await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: commands }
-    );
+const rest=new REST({version:"10"})
+.setToken(process.env.TOKEN);
 
-    console.log("Slash commands registered!");
-  } catch (err) {
-    console.error(err);
-  }
+(async()=>{
+
+console.log("Registering slash commands...");
+
+await rest.put(
+
+Routes.applicationGuildCommands(
+process.env.CLIENT_ID,
+"1528375001219207329"
+),
+
+{body:commands}
+
+);
+
+console.log("Slash commands registered!");
+
 })();
