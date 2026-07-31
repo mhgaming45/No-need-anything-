@@ -493,178 +493,40 @@ if (
 
 if (
   interaction.isButton() &&
-  const modal = new ModalBuilder()
-  .setCustomId(`tier_modal_${userId}`)
-  .setTitle("Assign Tier");
-
-const tier = new TextInputBuilder()
-  .setCustomId("tier")
-  .setLabel("Enter Tier")
-  .setPlaceholder("LT5, LT4, LT3, HT5, HT1...")
-  .setStyle(TextInputStyle.Short)
-  .setRequired(true);
-
-modal.addComponents(
-  new ActionRowBuilder().addComponents(tier)
-);
-
-return interaction.showModal(modal); {
-if (
-  !interaction.member.permissions.has("ManageGuild")
+  interaction.customId.startsWith("pass_")
 ) {
-  return interaction.reply({
-    content: "❌ Only testers can use this button.",
-    ephemeral: true
-  });
-}
-  const userId = interaction.customId.replace("pass_", "");
 
-  const db = loadDB();
-
-  const data = db[`user_${userId}`];
-
-  if (!data) {
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
     return interaction.reply({
-      content: "❌ Player not found.",
+      content: "❌ Only testers can use this button.",
       ephemeral: true
     });
   }
 
-  const mode = data.gamemode;
+  const userId = interaction.customId.replace("pass_", "");
 
-  // Remove player from queue
-  queues[mode] = queues[mode].filter(
-    id => id !== userId
+  const modal = new ModalBuilder()
+    .setCustomId(`tier_modal_${userId}`)
+    .setTitle("Assign Tier");
+
+  const tier = new TextInputBuilder()
+    .setCustomId("tier")
+    .setLabel("Enter Tier")
+    .setPlaceholder("LT5, LT4, LT3, LT2, LT1, HT5, HT4, HT3, HT2, HT1")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(tier)
   );
 
-  // Default Tier
-  const rankEarned = "LT5";
-
-  data.tier = rankEarned;
-
-  db[`user_${userId}`] = data;
-
-  saveDB(db);
-
-  // Give tier role (optional)
-  if (config.tierRoles && config.tierRoles[rankEarned]) {
-
-    const member = await interaction.guild.members
-      .fetch(userId)
-      .catch(() => null);
-
-    if (member) {
-
-  // Remove old tier roles
-  if (config.tierRoles) {
-
-    for (const roleId of Object.values(config.tierRoles)) {
-
-      await member.roles.remove(roleId).catch(() => {});
-
-    }
-
-  }
-
-  // Add new tier role
-  await member.roles
-    .add(config.tierRoles[rankEarned])
-    .catch(() => {});
+  return interaction.showModal(modal);
 
 }
-
-  }
-
-  await interaction.reply({
-
-    content:
-      `✅ **${data.ign}** passed the test!\n\n🏆 Tier: **${rankEarned}**`,
-
-    ephemeral: true
-
-  });
-
-  // Update Queue Channel
-
-  const channel = client.channels.cache.get(queueChannels[mode]);
-
-  if (channel) {
-
-    const list = queues[mode]
-      .map((id, i) => `${i + 1}. <@${id}>`)
-      .join("\n");
-
-    const embed = new EmbedBuilder()
-      .setColor("Blue")
-      .setTitle(`${mode.toUpperCase()} Queue`)
-      .setDescription(
-        list || "No players in queue."
-      );
-
-    const messages = await channel.messages.fetch();
-
-    const botMessage = messages.find(
-      m => m.author.id === client.user.id
-    );
-
-    if (botMessage) {
-
-      await botMessage.edit({
-        embeds: [embed]
-      });
-
-    } else {
-
-      await channel.send({
-        embeds: [embed]
-      });
-
-    }
-
-  }
-
-  // DM Player
-
-  const user = await client.users
-    .fetch(userId)
-    .catch(() => null);
-
-  if (user) {
-
-    await user.send({
-      embeds: [
-        new EmbedBuilder()
-          .setColor("Green")
-          .setTitle("🎉 Test Passed")
-          .setDescription(
-            `Congratulations!\n\n` +
-            `🏆 Tier Earned: **${rankEarned}**\n` +
-            `🎮 Gamemode: **${mode.toUpperCase()}**`
-          )
-      ]
-    }).catch(() => {});
-
-  }
-if (queues[mode].length > 0) {
-
-  const nextId = queues[mode][0];
-
-  const nextUser = await client.users.fetch(nextId).catch(() => null);
-
-  if (nextUser) {
-
-    nextUser.send(
-      "🎉 It's your turn! Please join the testing VC."
-    ).catch(() => {});
-
-  }
-
-}
-
-  return;
-
-}
-
 // ========================================
 // TIER MODAL
 // ========================================
