@@ -459,14 +459,26 @@ if (
 
   return interaction.reply({
 
-    embeds: [
+  embeds: [
 
-      new EmbedBuilder()
-        .setColor("Yellow")
-        .setTitle("🎯 Current Test")
-        .setDescription(
-          `👤 Player: <@${userId}>\n\n` +
-          `IGN: **${data.ign}**\n`
+    new EmbedBuilder()
+      .setColor("Yellow")
+      .setTitle("🎯 Current Test")
+      .setDescription(
+        `👤 Player: <@${userId}>\n\n` +
+        `IGN: **${data.ign}**\n` +
+        `Region: **${data.region}**\n` +
+        `Gamemode: **${mode.toUpperCase()}**`
+      )
+
+  ],
+
+  components: [row],
+  ephemeral: true
+
+});
+
+}
 
 // ========================================
 // PASS BUTTON
