@@ -284,3 +284,61 @@ if (
   });
 
 }
+// ========================================
+// GAMEMODE BUTTONS
+// ========================================
+
+const gamemodes = [
+  "uhc",
+  "pot",
+  "mace",
+  "nethop",
+  "smp",
+  "sword",
+  "axe",
+  "vanilla",
+  "cart"
+];
+
+if (
+  interaction.isButton() &&
+  gamemodes.includes(interaction.customId)
+) {
+
+  const db = loadDB();
+
+  const data = db[`user_${interaction.user.id}`];
+
+  if (!data) {
+    return interaction.reply({
+      content: "❌ Please register first.",
+      ephemeral: true
+    });
+  }
+
+  const mode = interaction.customId;
+
+  data.gamemode = mode;
+
+  saveDB(db);
+
+  // Already in queue?
+  if (queues[mode].includes(interaction.user.id)) {
+
+    const position =
+      queues[mode].indexOf(interaction.user.id) + 1;
+
+    return interaction.reply({
+      content:
+        `❌ You are already in the **${mode.toUpperCase()}** queue.\n\n` +
+        `📍 Position: **#${position}**`,
+      ephemeral: true
+    });
+
+  }
+
+  queues[mode].push(interaction.user.id);
+
+  const position = queues[mode].length;
+
+  const playersAhead = position - 1;
