@@ -153,8 +153,27 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
-  // =====================================================
-  // PART 2+
+  //
+// ========================================
+// TEST MODE SELECT
+// ========================================
+
+const testerMode = {};
+
+if (
+  interaction.isStringSelectMenu() &&
+  interaction.customId === "select_test_mode"
+) {
+
+  testerMode[interaction.user.id] = interaction.values[0];
+
+  return interaction.reply({
+    content:
+      `✅ Selected **${interaction.values[0].toUpperCase()}**.\nNow use **/nextplayer** (Part 4B).`,
+    ephemeral: true
+  });
+
+} =====================================================
   if (
   interaction.isButton() &&
   interaction.customId === "register"
