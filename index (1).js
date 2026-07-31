@@ -597,3 +597,75 @@ if (
   return;
 
 }
+// ========================================
+// FAIL BUTTON
+// ========================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId.startsWith("fail_")
+) {
+
+  const userId = interaction.customId.replace("fail_", "");
+
+  const modal = new ModalBuilder()
+    .setCustomId(`fail_modal_${userId}`)
+    .setTitle("Fail Player");
+
+  const reason = new TextInputBuilder()
+    .setCustomId("reason")
+    .setLabel("Reason")
+    .setStyle(TextInputStyle.Paragraph)
+    .setPlaceholder("Enter fail reason...")
+    .setRequired(true);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(reason)
+  );
+
+  return interaction.showModal(modal);
+
+}
+
+// ========================================
+// FAIL MODAL
+// ========================================
+
+if (
+  interaction.isModalSubmit() &&
+  interaction.customId.startsWith("fail_modal_")
+) {
+
+  const userId = interaction.customId.replace(
+    "fail_modal_",
+    ""
+  );
+
+  const reason =
+    interaction.fields.getTextInputValue("reason");
+
+  const db = loadDB();
+
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+
+    return interaction.reply({
+      content: "❌ Player not found.",
+      ephemeral: true
+    });
+
+  }
+
+  const mode = data.gamemode;
+
+  // Remove from queue
+  queues[mode] = queues[mode].filter(
+    id => id !== userId
+  );
+
+  data.losses = (data.losses || 0) + 1;
+
+  db[`user_${userId}`] = data;
+
+  saveDB(db);
