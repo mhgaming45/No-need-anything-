@@ -7,9 +7,20 @@ const commands = [
     .setName("panel")
     .setDescription("Send the register panel")
     .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName("queue")
+    .setDescription("Send Testing Queue Panel")
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName("testerpanel")
+    .setDescription("Send Tester Panel")
+    .toJSON(),
 ];
 
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" })
+  .setToken(process.env.TOKEN);
 
 (async () => {
   try {
