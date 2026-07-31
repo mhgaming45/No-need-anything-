@@ -605,6 +605,21 @@ if (
     }).catch(() => {});
 
   }
+if (queues[mode].length > 0) {
+
+  const nextId = queues[mode][0];
+
+  const nextUser = await client.users.fetch(nextId).catch(() => null);
+
+  if (nextUser) {
+
+    nextUser.send(
+      "🎉 It's your turn! Please join the testing VC."
+    ).catch(() => {});
+
+  }
+
+}
 
   return;
 
