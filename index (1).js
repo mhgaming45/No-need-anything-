@@ -467,3 +467,67 @@ if (
         .setDescription(
           `👤 Player: <@${userId}>\n\n` +
           `IGN: **${data.ign}**\n`
+
+// ========================================
+// PASS BUTTON
+// ========================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId.startsWith("pass_")
+) {
+
+  const userId = interaction.customId.replace("pass_", "");
+
+  const db = loadDB();
+
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+    return interaction.reply({
+      content: "❌ Player not found.",
+      ephemeral: true
+    });
+  }
+
+  const mode = data.gamemode;
+
+  // Remove player from queue
+  queues[mode] = queues[mode].filter(
+    id => id !== userId
+  );
+
+  // Default Tier
+  const rankEarned = "LT5";
+
+  data.tier = rankEarned;
+
+  db[`user_${userId}`] = data;
+
+  saveDB(db);
+
+  // Give tier role (optional)
+  if (config.tierRoles && config.tierRoles[rankEarned]) {
+
+    const member = await interaction.guild.members
+      .fetch(userId)
+      .catch(() => null);
+
+    if (member) {
+
+      await member.roles
+        .add(config.tierRoles[rankEarned])
+        .catch(() => {});
+
+    }
+
+  }
+
+  await interaction.reply({
+
+    content:
+      `✅ **${data.ign}** passed the test!\n\n🏆 Tier: **${rankEarned}**`,
+
+    ephemeral: true
+
+  });
