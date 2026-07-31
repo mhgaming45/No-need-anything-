@@ -541,11 +541,23 @@ if (
 
     if (member) {
 
-      await member.roles
-        .add(config.tierRoles[rankEarned])
-        .catch(() => {});
+  // Remove old tier roles
+  if (config.tierRoles) {
+
+    for (const roleId of Object.values(config.tierRoles)) {
+
+      await member.roles.remove(roleId).catch(() => {});
 
     }
+
+  }
+
+  // Add new tier role
+  await member.roles
+    .add(config.tierRoles[rankEarned])
+    .catch(() => {});
+
+}
 
   }
 
