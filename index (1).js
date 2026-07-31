@@ -531,3 +531,69 @@ if (
     ephemeral: true
 
   });
+
+  // Update Queue Channel
+
+  const channel = client.channels.cache.get(queueChannels[mode]);
+
+  if (channel) {
+
+    const list = queues[mode]
+      .map((id, i) => `${i + 1}. <@${id}>`)
+      .join("\n");
+
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle(`${mode.toUpperCase()} Queue`)
+      .setDescription(
+        list || "No players in queue."
+      );
+
+    const messages = await channel.messages.fetch();
+
+    const botMessage = messages.find(
+      m => m.author.id === client.user.id
+    );
+
+    if (botMessage) {
+
+      await botMessage.edit({
+        embeds: [embed]
+      });
+
+    } else {
+
+      await channel.send({
+        embeds: [embed]
+      });
+
+    }
+
+  }
+
+  // DM Player
+
+  const user = await client.users
+    .fetch(userId)
+    .catch(() => null);
+
+  if (user) {
+
+    await user.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Green")
+          .setTitle("🎉 Test Passed")
+          .setDescription(
+            `Congratulations!\n\n` +
+            `🏆 Tier Earned: **${rankEarned}**\n` +
+            `🎮 Gamemode: **${mode.toUpperCase()}**`
+          )
+      ]
+    }).catch(() => {});
+
+  }
+
+  return;
+
+}
