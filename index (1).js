@@ -1107,7 +1107,7 @@ await sendTestLog({
   tier: tier,
   mode: data.gamemode
 });
-  // =====================================================
+  }
 
 });
 
