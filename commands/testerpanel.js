@@ -74,10 +74,14 @@ module.exports = {
 
     const row = new ActionRowBuilder().addComponents(select);
 
-    await interaction.reply({
-      embeds: [embed],
-      components: [row]
-    });
+const row2 = new ActionRowBuilder().addComponents(
+  new ButtonBuilder()
+    .setCustomId("next_player")
+    .setLabel("🎯 Next Player")
+    .setStyle(ButtonStyle.Primary)
+);
 
-  }
-};
+await interaction.reply({
+  embeds: [embed],
+  components: [row, row2]
+});
