@@ -342,3 +342,63 @@ if (
   const position = queues[mode].length;
 
   const playersAhead = position - 1;
+
+  // Send queue message
+
+  await interaction.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor("Green")
+        .setTitle("✅ Joined Queue")
+        .setDescription(
+          `🎮 **Gamemode:** ${mode.toUpperCase()}\n\n` +
+          `📍 **Your Position:** #${position}\n` +
+          `👥 **Players Ahead:** ${playersAhead}\n\n` +
+          `Please wait for a tester.`
+        )
+    ],
+    ephemeral: true
+  });
+
+  // Update queue channel
+
+  const channel = client.channels.cache.get(queueChannels[mode]);
+
+  if (channel) {
+
+    const list = queues[mode]
+      .map((id, index) => `${index + 1}. <@${id}>`)
+      .join("\n");
+
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle(`${mode.toUpperCase()} Queue`)
+      .setDescription(
+        list || "No players in queue."
+      );
+
+    const messages = await channel.messages.fetch();
+
+    const botMessage = messages.find(
+      m => m.author.id === client.user.id
+    );
+
+    if (botMessage) {
+
+      await botMessage.edit({
+        embeds: [embed]
+      });
+
+    } else {
+
+      await channel.send({
+        embeds: [embed]
+      });
+
+    }
+
+  }
+
+  return;
+
+}
