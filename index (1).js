@@ -788,105 +788,6 @@ if (
 // PASS / FAIL + TEST LOG
 // ========================================
 
-if (
-  interaction.isButton() &&
-  (
-    interaction.customId.startsWith("pass_") ||
-    interaction.customId.startsWith("fail_")
-  )
-) {
-
-  // Tester permission
-  if (
-    !interaction.member.permissions.has(
-      PermissionsBitField.Flags.ManageGuild
-    )
-  ) {
-    return interaction.reply({
-      content: "❌ Only testers can use this button.",
-      ephemeral: true
-    });
-  }
-
-  const isPass =
-    interaction.customId.startsWith("pass_");
-
-  const userId = interaction.customId.replace(
-    isPass ? "pass_" : "fail_",
-    ""
-  );
-
-  const db = loadDB();
-
-  const data = db[`user_${userId}`];
-
-  if (!data) {
-    return interaction.reply({
-      content: "❌ Player data not found.",
-      ephemeral: true
-    });
-  }
-
-  // Save gamemode before resetting it
-  const mode = data.gamemode;
-
-  // ========================================
-  // UPDATE STATS
-  // ========================================
-
-  if (isPass) {
-
-    data.wins = (data.wins || 0) + 1;
-
-  } else {
-
-    data.losses = (data.losses || 0) + 1;
-
-  }
-
-  // ========================================
-  // REMOVE PLAYER FROM QUEUE
-  // ========================================
-
-  if (mode && queues[mode]) {
-
-    const index =
-      queues[mode].indexOf(userId);
-
-    if (index !== -1) {
-
-      queues[mode].splice(index, 1);
-
-    }
-
-  }
-
-  // ========================================
-  // REMOVE GAMEMODE ROLES
-  // ========================================
-
-  const player =
-    await interaction.guild.members
-      .fetch(userId)
-      .catch(() => null);
-
-  if (player && config.roles) {
-
-    for (
-      const roleId of Object.values(config.roles)
-    ) {
-
-      await player.roles
-        .remove(roleId)
-        .catch(() => {});
-
-    }
-
-  }
-
-  // ========================================
-  // RESET GAMEMODE
-  // ========================================
 
   data.gamemode = null;
 
@@ -943,16 +844,7 @@ if (
   // PASS → SET TIER
   // ========================================
 
-  const tierRow =
-    new ActionRowBuilder()
-      .addComponents(
-
-        new ButtonBuilder()
-          .setCustomId(`tier_${userId}`)
-          .setLabel("🏆 Set Tier")
-          .setStyle(ButtonStyle.Primary)
-
-      );
+  
 
   return interaction.reply({
 
@@ -1063,48 +955,7 @@ async function sendTestLog({
   }).catch(console.error);
 
 }
-  // ========================================
-// TIER MODAL
-// ========================================
-
-if (
-  interaction.isButton() &&
-  interaction.customId.startsWith("tier_")
-) {
-
-  if (
-    !interaction.member.permissions.has(
-      PermissionsBitField.Flags.ManageGuild
-    )
-  ) {
-    return interaction.reply({
-      content: "❌ Only testers can set tiers.",
-      ephemeral: true
-    });
-  }
-
-  const userId = interaction.customId.replace("tier_", "");
-
-  const modal = new ModalBuilder()
-    .setCustomId(`tier_modal_${userId}`)
-    .setTitle("🏆 Set Player Tier");
-
-  const tierInput = new TextInputBuilder()
-    .setCustomId("tier")
-    .setLabel("Enter Tier")
-    .setPlaceholder("LT5 / LT4 / LT3 / LT2 / LT1 / HT1 / HT2 / HT3 / HT4 / HT5")
-    .setStyle(TextInputStyle.Short)
-    .setRequired(true)
-    .setMaxLength(3);
-
-  modal.addComponents(
-    new ActionRowBuilder().addComponents(tierInput)
-  );
-
-  return interaction.showModal(modal);
-}
-
-
+  // ======================================
 // ========================================
 // TIER MODAL SUBMIT
 // ========================================
