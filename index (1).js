@@ -738,3 +738,36 @@ if (
   });
 
 }
+// ================================
+// KEEP ALIVE (Hosting)
+// ================================
+
+http
+  .createServer((req, res) => {
+    res.writeHead(200, {
+      "Content-Type": "text/plain"
+    });
+    res.end("Bot is running!");
+  })
+  .listen(process.env.PORT || 3000, () => {
+    console.log("Web server started.");
+  });
+
+// ================================
+// ERROR HANDLING
+// ================================
+
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
+
+// ================================
+// LOGIN
+// ================================
+
+client.login(process.env.TOKEN);
+
+// ================================
+// END OF INTERACTION
+// ================================
+
+});
