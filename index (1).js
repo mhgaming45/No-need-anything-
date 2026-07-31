@@ -493,8 +493,22 @@ if (
 
 if (
   interaction.isButton() &&
-  interaction.customId.startsWith("pass_")
-) {
+  const modal = new ModalBuilder()
+  .setCustomId(`tier_modal_${userId}`)
+  .setTitle("Assign Tier");
+
+const tier = new TextInputBuilder()
+  .setCustomId("tier")
+  .setLabel("Enter Tier")
+  .setPlaceholder("LT5, LT4, LT3, HT5, HT1...")
+  .setStyle(TextInputStyle.Short)
+  .setRequired(true);
+
+modal.addComponents(
+  new ActionRowBuilder().addComponents(tier)
+);
+
+return interaction.showModal(modal); {
 if (
   !interaction.member.permissions.has("ManageGuild")
 ) {
