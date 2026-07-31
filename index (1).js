@@ -669,7 +669,14 @@ if (
   interaction.isModalSubmit() &&
   interaction.customId.startsWith("fail_modal_")
 ) {
-
+if (
+  !interaction.member.permissions.has("ManageGuild")
+) {
+  return interaction.reply({
+    content: "❌ Only testers can use this button.",
+    ephemeral: true
+  });
+}
   const userId = interaction.customId.replace(
     "fail_modal_",
     ""
