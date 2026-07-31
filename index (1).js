@@ -83,3 +83,76 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+// ========================================
+// LOAD COMMANDS
+// ========================================
+
+const commandsPath = path.join(__dirname, "commands");
+
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter(file => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+
+  const command = require(
+    path.join(commandsPath, file)
+  );
+
+  if (command.data && command.execute) {
+    client.commands.set(
+      command.data.name,
+      command
+    );
+  }
+
+}
+
+// ========================================
+// READY EVENT
+// ========================================
+
+client.once(Events.ClientReady, () => {
+
+  console.log(`${client.user.tag} is online!`);
+
+});
+
+// ========================================
+// INTERACTION CREATE
+// ========================================
+
+client.on("interactionCreate", async (interaction) => {
+
+  // ========================================
+  // SLASH COMMANDS
+  // ========================================
+
+  if (interaction.isChatInputCommand()) {
+
+    const command = client.commands.get(
+      interaction.commandName
+    );
+
+    if (!command) return;
+
+    try {
+
+      await command.execute(interaction);
+
+    } catch (err) {
+
+      console.error(err);
+
+      if (!interaction.replied) {
+        await interaction.reply({
+          content: "❌ An error occurred while executing this command.",
+          ephemeral: true
+        });
+      }
+
+    }
+
+    return;
+  }
