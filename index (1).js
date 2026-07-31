@@ -488,7 +488,14 @@ if (
   interaction.isButton() &&
   interaction.customId.startsWith("pass_")
 ) {
-
+if (
+  !interaction.member.permissions.has("ManageGuild")
+) {
+  return interaction.reply({
+    content: "❌ Only testers can use this button.",
+    ephemeral: true
+  });
+}
   const userId = interaction.customId.replace("pass_", "");
 
   const db = loadDB();
