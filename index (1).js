@@ -991,7 +991,93 @@ if (
     ephemeral: true
   });
 }
-  // Logs
+  // ========================================
+// TESTING LOGS
+// ========================================
+
+async function sendTestLog({
+  tester,
+  playerId,
+  result,
+  tier = null,
+  mode = null
+}) {
+
+  if (!config.logChannel) return;
+
+  const channel = client.channels.cache.get(
+    config.logChannel
+  );
+
+  if (!channel) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(result === "PASS" ? "Green" : "Red")
+    .setTitle("🧪 Tire Testing Log")
+    .addFields(
+      {
+        name: "👤 Player",
+        value: `<@${playerId}>`,
+        inline: true
+      },
+      {
+        name: "🧪 Tester",
+        value: `<@${tester.id}>`,
+        inline: true
+      },
+      {
+        name: "🎮 Gamemode",
+        value: mode
+          ? mode.toUpperCase()
+          : "Unknown",
+        inline: true
+      },
+      {
+        name: "📊 Result",
+        value: result === "PASS"
+          ? "✅ PASS"
+          : "❌ FAIL",
+        inline: true
+      }
+    )
+    .setTimestamp()
+    .setFooter({
+      text: "MHGAMING • Tire Testing"
+    });
+
+  if (tier) {
+    embed.addFields({
+      name: "🏆 Tier",
+      value: `**${tier}**`,
+      inline: true
+    });
+  }
+
+  await channel.send({
+    embeds: [embed]
+  }).catch(console.error);
+}
+
+PASS/FAIL code me log call bhi add karo
+
+PASS/FAIL ke andar, "return interaction.reply(...)" se pehle ye lagao:
+
+await sendTestLog({
+  tester: interaction.user,
+  playerId: userId,
+  result: isPass ? "PASS" : "FAIL",
+  mode: mode
+});
+
+Aur Tier Modal Submit ke andar, tier role add hone ke baad ye lagao:
+
+await sendTestLog({
+  tester: interaction.user,
+  playerId: userId,
+  result: "PASS",
+  tier: tier,
+  mode: data.gamemode
+});
   // =====================================================
 
 });
