@@ -87,3 +87,7 @@ const row2 = new ActionRowBuilder()
     .setLabel("🎯 Next Player")
     .setStyle(ButtonStyle.Primary)
 );
+await interaction.reply({
+  embeds: [embed],
+  components: [row1, row2]
+});
