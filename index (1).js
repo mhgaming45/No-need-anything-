@@ -733,14 +733,79 @@ if (
 
 }
   // ========================================
-// PASS / FAIL
+// PASS / FAIL + TEST LOG
 // ========================================
 
+if (
+  interaction.isButton() &&
+  (
+    interaction.customId.startsWith("pass_") ||
+    interaction.customId.startsWith("fail_")
+  )
+) {
 
-  
+  // Tester permission
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
+    return interaction.reply({
+      content: "❌ Only testers can use this button.",
+      ephemeral: true
+    });
   }
 
-  // Remove gamemode roles
+  const isPass =
+    interaction.customId.startsWith("pass_");
+
+  const userId = interaction.customId.replace(
+    isPass ? "pass_" : "fail_",
+    ""
+  );
+
+  const db = loadDB();
+
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+    return interaction.reply({
+      content: "❌ Player data not found.",
+      ephemeral: true
+    });
+  }
+
+  // Save gamemode before resetting
+  const mode = data.gamemode;
+
+  // ========================================
+  // UPDATE STATS
+  // ========================================
+
+  if (isPass) {
+    data.wins = (data.wins || 0) + 1;
+  } else {
+    data.losses = (data.losses || 0) + 1;
+  }
+
+  // ========================================
+  // REMOVE PLAYER FROM QUEUE
+  // ========================================
+
+  if (mode && queues[mode]) {
+
+    const index = queues[mode].indexOf(userId);
+
+    if (index !== -1) {
+      queues[mode].splice(index, 1);
+    }
+
+  }
+
+  // ========================================
+  // REMOVE GAMEMODE ROLES
+  // ========================================
+
   const player = await interaction.guild.members
     .fetch(userId)
     .catch(() => null);
@@ -748,46 +813,18 @@ if (
   if (player && config.roles) {
 
     for (const roleId of Object.values(config.roles)) {
-      await player.roles.remove(roleId).catch(() => {});
-    }
-  }
 
-  // Reset gamemode
-  data.gamemode = null;
+      await player.roles
+        .remove(roleId)
+        .catch(() => {});
 
-  db[`user_${userId}`] = data;
-  saveDB(db);
-
-  // ========================================
-  // FAIL
-  // ========================================
-
-  if (!isPass) {
-
-    await sendTestLog({
-      tester: interaction.user,
-      playerId: userId,
-      result: "FAIL",
-      mode: mode
-    });
-
-    if (mode) {
-      await updateQueue(mode);
     }
 
-    return interaction.reply({
-      content:
-        `❌ **TEST FAILED**\n\n` +
-        `👤 Player: <@${userId}>\n` +
-        `🎮 Gamemode: **${mode ? mode.toUpperCase() : "UNKNOWN"}**`,
-      ephemeral: true
-    });
   }
 
-// ========================================
-// PASS / FAIL + TEST LOG
-// ========================================
-
+  // ========================================
+  // SAVE DATA
+  // ========================================
 
   data.gamemode = null;
 
@@ -796,7 +833,7 @@ if (
   saveDB(db);
 
   // ========================================
-  // SEND TEST LOG
+  // SEND PASS / FAIL LOG
   // ========================================
 
   await sendTestLog({
@@ -811,9 +848,7 @@ if (
   // ========================================
 
   if (mode) {
-
     await updateQueue(mode);
-
   }
 
   // ========================================
@@ -828,10 +863,8 @@ if (
         `❌ **TEST FAILED!**\n\n` +
         `👤 Player: <@${userId}>\n` +
         `🎮 Gamemode: **${
-          mode
-            ? mode.toUpperCase()
-            : "UNKNOWN"
-        }**\n\n` +
+          mode ? mode.toUpperCase() : "UNKNOWN"
+        }**\n` +
         `📊 Losses: **${data.losses}**`,
 
       ephemeral: true
@@ -844,7 +877,15 @@ if (
   // PASS → SET TIER
   // ========================================
 
-  
+  const tierRow = new ActionRowBuilder()
+    .addComponents(
+
+      new ButtonBuilder()
+        .setCustomId(`tier_${userId}`)
+        .setLabel("🏆 Set Tier")
+        .setStyle(ButtonStyle.Primary)
+
+    );
 
   return interaction.reply({
 
@@ -852,9 +893,7 @@ if (
       `✅ **TEST PASSED!**\n\n` +
       `👤 Player: <@${userId}>\n` +
       `🎮 Gamemode: **${
-        mode
-          ? mode.toUpperCase()
-          : "UNKNOWN"
+        mode ? mode.toUpperCase() : "UNKNOWN"
       }**\n` +
       `📊 Wins: **${data.wins}**\n\n` +
       `🏆 Click **Set Tier** to assign the player's tier.`,
@@ -864,6 +903,7 @@ if (
     ephemeral: true
 
   });
+
 }
 
 
@@ -881,58 +921,59 @@ async function sendTestLog({
 
   if (!config.logChannel) return;
 
-  const channel =
-    client.channels.cache.get(
-      config.logChannel
-    );
+  const channel = client.channels.cache.get(
+    config.logChannel
+  );
 
   if (!channel) return;
 
-  const embed =
-    new EmbedBuilder()
-      .setColor(
-        result === "PASS"
-          ? "Green"
-          : "Red"
-      )
-      .setTitle("🧪 Tier Testing Log")
-      .addFields(
+  const embed = new EmbedBuilder()
+    .setColor(
+      result === "PASS"
+        ? "Green"
+        : "Red"
+    )
+    .setTitle("🧪 Tier Testing Log")
 
-        {
-          name: "👤 Player",
-          value: `<@${playerId}>`,
-          inline: true
-        },
+    .addFields(
 
-        {
-          name: "🧪 Tester",
-          value: `<@${tester.id}>`,
-          inline: true
-        },
+      {
+        name: "👤 Player",
+        value: `<@${playerId}>`,
+        inline: true
+      },
 
-        {
-          name: "🎮 Gamemode",
-          value:
-            mode
-              ? mode.toUpperCase()
-              : "Unknown",
-          inline: true
-        },
+      {
+        name: "🧪 Tester",
+        value: `<@${tester.id}>`,
+        inline: true
+      },
 
-        {
-          name: "📊 Result",
-          value:
-            result === "PASS"
-              ? "✅ PASS"
-              : "❌ FAIL",
-          inline: true
-        }
+      {
+        name: "🎮 Gamemode",
+        value:
+          mode
+            ? mode.toUpperCase()
+            : "Unknown",
+        inline: true
+      },
 
-      )
-      .setTimestamp()
-      .setFooter({
-        text: "MHGAMING • Tier Testing"
-      });
+      {
+        name: "📊 Result",
+        value:
+          result === "PASS"
+            ? "✅ PASS"
+            : "❌ FAIL",
+        inline: true
+      }
+
+    )
+
+    .setTimestamp()
+
+    .setFooter({
+      text: "MHGAMING • Tier Testing"
+    });
 
   if (tier) {
 
@@ -949,13 +990,11 @@ async function sendTestLog({
   }
 
   await channel.send({
-
     embeds: [embed]
-
   }).catch(console.error);
 
 }
-  // ======================================
+
 // ========================================
 // TIER MODAL SUBMIT
 // ========================================
