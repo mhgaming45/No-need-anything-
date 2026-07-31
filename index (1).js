@@ -742,7 +742,6 @@ if (
    interaction.customId.startsWith("fail_"))
 ) {
 
-  // Tester permission
   if (
     !interaction.member.permissions.has(
       PermissionsBitField.Flags.ManageGuild
@@ -756,8 +755,10 @@ if (
 
   const isPass = interaction.customId.startsWith("pass_");
 
-  const userId = interaction.customId
-    .replace(isPass ? "pass_" : "fail_", "");
+  const userId = interaction.customId.replace(
+    isPass ? "pass_" : "fail_",
+    ""
+  );
 
   const db = loadDB();
   const data = db[`user_${userId}`];
@@ -769,18 +770,14 @@ if (
     });
   }
 
+  const mode = data.gamemode;
+
   // Update stats
   if (isPass) {
     data.wins = (data.wins || 0) + 1;
   } else {
     data.losses = (data.losses || 0) + 1;
   }
-
-  db[`user_${userId}`] = data;
-  saveDB(db);
-
-  // Get player's gamemode
-  const mode = data.gamemode;
 
   // Remove player from queue
   if (mode && queues[mode]) {
@@ -790,24 +787,18 @@ if (
     if (index !== -1) {
       queues[mode].splice(index, 1);
     }
-
   }
 
-  // Remove gamemode role
-  const member = await interaction.guild.members
+  // Remove gamemode roles
+  const player = await interaction.guild.members
     .fetch(userId)
     .catch(() => null);
 
-  if (member && config.roles) {
+  if (player && config.roles) {
 
     for (const roleId of Object.values(config.roles)) {
-
-      await member.roles
-        .remove(roleId)
-        .catch(() => {});
-
+      await player.roles.remove(roleId).catch(() => {});
     }
-
   }
 
   // Reset gamemode
@@ -816,26 +807,64 @@ if (
   db[`user_${userId}`] = data;
   saveDB(db);
 
-  const result = isPass ? "✅ PASS" : "❌ FAIL";
+  // ========================================
+  // FAIL
+  // ========================================
 
-  await interaction.reply({
-    content:
-      `${result}\n\n` +
-      `👤 Player: <@${userId}>\n` +
-      `🎮 Gamemode: **${mode ? mode.toUpperCase() : "UNKNOWN"}**`,
-    ephemeral: true
+  if (!isPass) {
+
+    await sendTestLog({
+      tester: interaction.user,
+      playerId: userId,
+      result: "FAIL",
+      mode: mode
+    });
+
+    if (mode) {
+      await updateQueue(mode);
+    }
+
+    return interaction.reply({
+      content:
+        `❌ **TEST FAILED**\n\n` +
+        `👤 Player: <@${userId}>\n` +
+        `🎮 Gamemode: **${mode ? mode.toUpperCase() : "UNKNOWN"}**`,
+      ephemeral: true
+    });
+  }
+
+  // ========================================
+  // PASS → SET TIER
+  // ========================================
+
+  await sendTestLog({
+    tester: interaction.user,
+    playerId: userId,
+    result: "PASS",
+    mode: mode
   });
 
-  // Update queue channel
   if (mode) {
     await updateQueue(mode);
   }
 
-  console.log(
-    `[TEST RESULT] ${interaction.user.tag} -> ${result} -> ${userId}`
-  );
+  const tierRow = new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`tier_${userId}`)
+        .setLabel("🏆 Set Tier")
+        .setStyle(ButtonStyle.Primary)
+    );
 
-  return;
+  return interaction.reply({
+    content:
+      `✅ **TEST PASSED!**\n\n` +
+      `👤 Player: <@${userId}>\n` +
+      `🎮 Gamemode: **${mode ? mode.toUpperCase() : "UNKNOWN"}**\n\n` +
+      `🏆 Click **Set Tier** to assign the player's tier.`,
+    components: [tierRow],
+    ephemeral: true
+  });
 }
   // ========================================
 // TIER MODAL
