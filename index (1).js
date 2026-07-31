@@ -410,7 +410,14 @@ if (
   interaction.isButton() &&
   interaction.customId === "next_player"
 ) {
-
+if (
+  !interaction.member.permissions.has("ManageGuild")
+) {
+  return interaction.reply({
+    content: "❌ Only testers can use this button.",
+    ephemeral: true
+  });
+}
   const mode = interaction.message.embeds[0]?.title
     ?.split(" ")[0]
     ?.toLowerCase();
