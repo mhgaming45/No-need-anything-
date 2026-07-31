@@ -837,7 +837,160 @@ if (
 
   return;
 }
-  // Tier Modal
+  // ========================================
+// TIER MODAL
+// ========================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId.startsWith("tier_")
+) {
+
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
+    return interaction.reply({
+      content: "❌ Only testers can set tiers.",
+      ephemeral: true
+    });
+  }
+
+  const userId = interaction.customId.replace("tier_", "");
+
+  const modal = new ModalBuilder()
+    .setCustomId(`tier_modal_${userId}`)
+    .setTitle("🏆 Set Player Tier");
+
+  const tierInput = new TextInputBuilder()
+    .setCustomId("tier")
+    .setLabel("Enter Tier")
+    .setPlaceholder("LT5 / LT4 / LT3 / LT2 / LT1 / HT1 / HT2 / HT3 / HT4 / HT5")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(3);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(tierInput)
+  );
+
+  return interaction.showModal(modal);
+}
+
+
+// ========================================
+// TIER MODAL SUBMIT
+// ========================================
+
+if (
+  interaction.isModalSubmit() &&
+  interaction.customId.startsWith("tier_modal_")
+) {
+
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
+    return interaction.reply({
+      content: "❌ Only testers can set tiers.",
+      ephemeral: true
+    });
+  }
+
+  const userId = interaction.customId.replace(
+    "tier_modal_",
+    ""
+  );
+
+  const tier = interaction.fields
+    .getTextInputValue("tier")
+    .trim()
+    .toUpperCase();
+
+  const validTiers = [
+    "LT5",
+    "LT4",
+    "LT3",
+    "LT2",
+    "LT1",
+    "HT1",
+    "HT2",
+    "HT3",
+    "HT4",
+    "HT5"
+  ];
+
+  if (!validTiers.includes(tier)) {
+    return interaction.reply({
+      content:
+        "❌ Invalid tier!\n\n" +
+        "Valid tiers:\n" +
+        "**LT5, LT4, LT3, LT2, LT1, HT1, HT2, HT3, HT4, HT5**",
+      ephemeral: true
+    });
+  }
+
+  const db = loadDB();
+
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+    return interaction.reply({
+      content: "❌ Player data not found.",
+      ephemeral: true
+    });
+  }
+
+  data.tier = tier;
+
+  db[`user_${userId}`] = data;
+
+  saveDB(db);
+
+  // ========================================
+  // REMOVE OLD TIER ROLES
+  // ========================================
+
+  const tierRoles = {
+    LT5: "1532653229723091105",
+    LT4: "1532653270227747006",
+    LT3: "1532653314653556826",
+    LT2: "1532653346819674143",
+    LT1: "1532653387177267210",
+    HT1: "1532653494589460540",
+    HT2: "1532653538289913877",
+    HT3: "1532653584963866645",
+    HT4: "1532653641171861606",
+    HT5: "1532653725871509584"
+  };
+
+  const player = await interaction.guild.members
+    .fetch(userId)
+    .catch(() => null);
+
+  if (player) {
+
+    for (const roleId of Object.values(tierRoles)) {
+      await player.roles
+        .remove(roleId)
+        .catch(() => {});
+    }
+
+    await player.roles
+      .add(tierRoles[tier])
+      .catch(() => {});
+  }
+
+  return interaction.reply({
+    content:
+      `🏆 **Tier Updated!**\n\n` +
+      `👤 Player: <@${userId}>\n` +
+      `🏆 Tier: **${tier}**`,
+    ephemeral: true
+  });
+}
   // Logs
   // =====================================================
 
