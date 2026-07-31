@@ -833,17 +833,6 @@ if (
   saveDB(db);
 
   // ========================================
-  // SEND PASS / FAIL LOG
-  // ========================================
-
-  await sendTestLog({
-    tester: interaction.user,
-    playerId: userId,
-    result: isPass ? "PASS" : "FAIL",
-    mode: mode
-  });
-
-  // ========================================
   // UPDATE QUEUE
   // ========================================
 
