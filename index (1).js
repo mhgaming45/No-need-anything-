@@ -669,3 +669,72 @@ if (
   db[`user_${userId}`] = data;
 
   saveDB(db);
+  // Update Queue Channel
+
+  const channel = client.channels.cache.get(queueChannels[mode]);
+
+  if (channel) {
+
+    const list = queues[mode]
+      .map((id, i) => `${i + 1}. <@${id}>`)
+      .join("\n");
+
+    const embed = new EmbedBuilder()
+      .setColor("Red")
+      .setTitle(`${mode.toUpperCase()} Queue`)
+      .setDescription(
+        list || "No players in queue."
+      );
+
+    const messages = await channel.messages.fetch();
+
+    const botMessage = messages.find(
+      m => m.author.id === client.user.id
+    );
+
+    if (botMessage) {
+
+      await botMessage.edit({
+        embeds: [embed]
+      });
+
+    } else {
+
+      await channel.send({
+        embeds: [embed]
+      });
+
+    }
+
+  }
+
+  // DM Failed Player
+
+  const user = await client.users
+    .fetch(userId)
+    .catch(() => null);
+
+  if (user) {
+
+    await user.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("Red")
+          .setTitle("❌ Test Failed")
+          .setDescription(
+            `Unfortunately, you did not pass.\n\n` +
+            `🎮 Gamemode: **${mode.toUpperCase()}**\n` +
+            `📝 Reason: **${reason}**`
+          )
+      ]
+    }).catch(() => {});
+
+  }
+
+  return interaction.reply({
+    content:
+      `❌ **${data.ign}** has been marked as **FAIL**.\n\nReason: **${reason}**`,
+    ephemeral: true
+  });
+
+}
