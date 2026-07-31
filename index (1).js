@@ -826,11 +826,11 @@ if (
   // SAVE DATA
   // ========================================
 
-  data.gamemode = null;
+  data.lastTestMode = mode;
+data.gamemode = null;
 
-  db[`user_${userId}`] = data;
-
-  saveDB(db);
+db[`user_${userId}`] = data;
+saveDB(db);
 
   // ========================================
   // UPDATE QUEUE
