@@ -732,8 +732,111 @@ if (
   });
 
 }
-  // PASS
-  // FAIL
+  // ========================================
+// PASS / FAIL
+// ========================================
+
+if (
+  interaction.isButton() &&
+  (interaction.customId.startsWith("pass_") ||
+   interaction.customId.startsWith("fail_"))
+) {
+
+  // Tester permission
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
+    return interaction.reply({
+      content: "❌ Only testers can use this button.",
+      ephemeral: true
+    });
+  }
+
+  const isPass = interaction.customId.startsWith("pass_");
+
+  const userId = interaction.customId
+    .replace(isPass ? "pass_" : "fail_", "");
+
+  const db = loadDB();
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+    return interaction.reply({
+      content: "❌ Player data not found.",
+      ephemeral: true
+    });
+  }
+
+  // Update stats
+  if (isPass) {
+    data.wins = (data.wins || 0) + 1;
+  } else {
+    data.losses = (data.losses || 0) + 1;
+  }
+
+  db[`user_${userId}`] = data;
+  saveDB(db);
+
+  // Get player's gamemode
+  const mode = data.gamemode;
+
+  // Remove player from queue
+  if (mode && queues[mode]) {
+
+    const index = queues[mode].indexOf(userId);
+
+    if (index !== -1) {
+      queues[mode].splice(index, 1);
+    }
+
+  }
+
+  // Remove gamemode role
+  const member = await interaction.guild.members
+    .fetch(userId)
+    .catch(() => null);
+
+  if (member && config.roles) {
+
+    for (const roleId of Object.values(config.roles)) {
+
+      await member.roles
+        .remove(roleId)
+        .catch(() => {});
+
+    }
+
+  }
+
+  // Reset gamemode
+  data.gamemode = null;
+
+  db[`user_${userId}`] = data;
+  saveDB(db);
+
+  const result = isPass ? "✅ PASS" : "❌ FAIL";
+
+  await interaction.reply({
+    content:
+      `${result}\n\n` +
+      `👤 Player: <@${userId}>\n` +
+      `🎮 Gamemode: **${mode ? mode.toUpperCase() : "UNKNOWN"}**`,
+    ephemeral: true
+  });
+
+  // Update queue channel
+  if (mode) {
+    await updateQueue(mode);
+  }
+
+  console.log(
+    `[TEST RESULT] ${interaction.user.tag} -> ${result} -> ${userId}`
+  );
+
+  return;
+}
   // Tier Modal
   // Logs
   // =====================================================
