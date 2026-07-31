@@ -985,6 +985,35 @@ async function sendTestLog({
 }
 
 // ========================================
+// SET TIER BUTTON
+// ========================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId.startsWith("tier_")
+) {
+
+  const userId = interaction.customId.replace("tier_", "");
+
+  const modal = new ModalBuilder()
+    .setCustomId(`tier_modal_${userId}`)
+    .setTitle("Set Player Tier");
+
+  const tierInput = new TextInputBuilder()
+    .setCustomId("tier")
+    .setLabel("Enter Tier")
+    .setPlaceholder("LT5 / LT4 / LT3 / LT2 / LT1 / HT1 / HT2 / HT3 / HT4 / HT5")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(tierInput)
+  );
+
+  return interaction.showModal(modal);
+}
+
+// ========================================
 // TIER MODAL SUBMIT
 // ========================================
 
