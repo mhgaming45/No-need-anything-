@@ -859,14 +859,4 @@ http
 process.on("unhandledRejection", console.error);
 process.on("uncaughtException", console.error);
 
-// ================================
-// LOGIN
-// ================================
-
 client.login(process.env.TOKEN);
-
-// ================================
-// END OF INTERACTION
-// ================================
-
-});
