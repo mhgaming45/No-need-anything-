@@ -585,14 +585,7 @@ if (
     });
 
   }
-if (!member) {
 
-  return interaction.reply({
-    content: "❌ Member not found.",
-    ephemeral: true
-  });
-
-}
 // Remove old tier roles
 for (const roleId of Object.values(config.tierRoles)) {
 
