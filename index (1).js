@@ -402,3 +402,68 @@ if (
   return;
 
 }
+// ========================================
+// TESTER PANEL - NEXT PLAYER
+// ========================================
+
+if (
+  interaction.isButton() &&
+  interaction.customId === "next_player"
+) {
+
+  const mode = interaction.message.embeds[0]?.title
+    ?.split(" ")[0]
+    ?.toLowerCase();
+
+  if (!mode || !queues[mode]) {
+    return interaction.reply({
+      content: "❌ Invalid queue.",
+      ephemeral: true
+    });
+  }
+
+  if (queues[mode].length === 0) {
+    return interaction.reply({
+      content: "❌ Queue is empty.",
+      ephemeral: true
+    });
+  }
+
+  const userId = queues[mode][0];
+
+  const db = loadDB();
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+    queues[mode].shift();
+
+    return interaction.reply({
+      content: "❌ Player data not found.",
+      ephemeral: true
+    });
+  }
+
+  const row = new ActionRowBuilder().addComponents(
+
+    new ButtonBuilder()
+      .setCustomId(`pass_${userId}`)
+      .setLabel("✅ PASS")
+      .setStyle(ButtonStyle.Success),
+
+    new ButtonBuilder()
+      .setCustomId(`fail_${userId}`)
+      .setLabel("❌ FAIL")
+      .setStyle(ButtonStyle.Danger)
+
+  );
+
+  return interaction.reply({
+
+    embeds: [
+
+      new EmbedBuilder()
+        .setColor("Yellow")
+        .setTitle("🎯 Current Test")
+        .setDescription(
+          `👤 Player: <@${userId}>\n\n` +
+          `IGN: **${data.ign}**\n`
