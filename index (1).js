@@ -644,7 +644,94 @@ setInterval(async () => {
 }, 30000);
 
   // Tester Panel
-  // Next Player
+  // ========================================
+// NEXT PLAYER
+// ========================================
+
+const testerMode = global.testerMode || (global.testerMode = {});
+
+if (
+  interaction.isButton() &&
+  interaction.customId === "next_player"
+) {
+
+  if (
+    !interaction.member.permissions.has(
+      PermissionsBitField.Flags.ManageGuild
+    )
+  ) {
+    return interaction.reply({
+      content: "❌ Only testers can use this button.",
+      ephemeral: true
+    });
+  }
+
+  const mode = testerMode[interaction.user.id];
+
+  if (!mode) {
+    return interaction.reply({
+      content: "❌ Please select a gamemode first.",
+      ephemeral: true
+    });
+  }
+
+  if (!queues[mode] || queues[mode].length === 0) {
+    return interaction.reply({
+      content: `❌ ${mode.toUpperCase()} queue is empty.`,
+      ephemeral: true
+    });
+  }
+
+  const userId = queues[mode][0];
+
+  const db = loadDB();
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+
+    queues[mode].shift();
+
+    return interaction.reply({
+      content: "❌ Player data not found.",
+      ephemeral: true
+    });
+
+  }
+
+  const row = new ActionRowBuilder()
+    .addComponents(
+
+      new ButtonBuilder()
+        .setCustomId(`pass_${userId}`)
+        .setLabel("✅ PASS")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId(`fail_${userId}`)
+        .setLabel("❌ FAIL")
+        .setStyle(ButtonStyle.Danger)
+
+    );
+
+  const embed = new EmbedBuilder()
+    .setColor("Yellow")
+    .setTitle("🎯 Current Player")
+    .setDescription(
+      `👤 Player: <@${userId}>\n\n` +
+      `🎮 IGN: **${data.ign}**\n` +
+      `🌍 Region: **${data.region}**\n` +
+      `⚔️ Gamemode: **${mode.toUpperCase()}**\n` +
+      `🏆 Wins: **${data.wins || 0}**\n` +
+      `❌ Losses: **${data.losses || 0}**`
+    );
+
+  return interaction.reply({
+    embeds: [embed],
+    components: [row],
+    ephemeral: true
+  });
+
+}
   // PASS
   // FAIL
   // Tier Modal
