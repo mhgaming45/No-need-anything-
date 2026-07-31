@@ -664,6 +664,176 @@ if (queues[mode].length > 0) {
   return;
 
 }
+
+// ========================================
+// TIER MODAL
+// ========================================
+
+if (
+  interaction.isModalSubmit() &&
+  interaction.customId.startsWith("tier_modal_")
+) {
+
+  const userId = interaction.customId.replace(
+    "tier_modal_",
+    ""
+  );
+
+  const rankEarned = interaction.fields
+    .getTextInputValue("tier")
+    .toUpperCase();
+
+  if (
+    !config.tierRoles ||
+    !config.tierRoles[rankEarned]
+  ) {
+
+    return interaction.reply({
+      content:
+        "❌ Invalid Tier.\nExample: LT5, LT4, LT3, LT2, LT1, HT5, HT4, HT3, HT2, HT1",
+      ephemeral: true
+    });
+
+  }
+
+  const db = loadDB();
+
+  const data = db[`user_${userId}`];
+
+  if (!data) {
+
+    return interaction.reply({
+      content: "❌ Player not found.",
+      ephemeral: true
+    });
+
+  }
+
+  const mode = data.gamemode;
+
+  const member = await interaction.guild.members
+    .fetch(userId)
+    .catch(() => null);
+
+  if (!member) {
+
+    return interaction.reply({
+      content: "❌ Member not found.",
+      ephemeral: true
+    });
+
+  }
+if (!member) {
+
+  return interaction.reply({
+    content: "❌ Member not found.",
+    ephemeral: true
+  });
+
+}
+// Remove old tier roles
+for (const roleId of Object.values(config.tierRoles)) {
+
+  await member.roles
+    .remove(roleId)
+    .catch(() => {});
+
+}
+
+// Add new tier role
+await member.roles
+  .add(config.tierRoles[rankEarned])
+  .catch(() => {});
+
+// Remove player from queue
+queues[mode] = queues[mode].filter(
+  id => id !== userId
+);
+
+// Save tier
+data.tier = rankEarned;
+data.wins = (data.wins || 0) + 1;
+
+db[`user_${userId}`] = data;
+
+saveDB(db);
+// ================================
+// UPDATE QUEUE CHANNEL
+// ================================
+
+const channel = client.channels.cache.get(queueChannels[mode]);
+
+if (channel) {
+
+  const list = queues[mode]
+    .map((id, i) => `${i + 1}. <@${id}>`)
+    .join("\n");
+
+  const embed = new EmbedBuilder()
+    .setColor("Blue")
+    .setTitle(`${mode.toUpperCase()} Queue`)
+    .setDescription(
+      list || "No players in queue."
+    );
+
+  const messages = await channel.messages.fetch();
+
+  const botMessage = messages.find(
+    m => m.author.id === client.user.id
+  );
+
+  if (botMessage) {
+
+    await botMessage.edit({
+      embeds: [embed]
+    });
+
+  } else {
+
+    await channel.send({
+      embeds: [embed]
+    });
+
+  }
+
+}
+
+// ================================
+// DM PLAYER
+// ================================
+
+const user = await client.users
+  .fetch(userId)
+  .catch(() => null);
+
+if (user) {
+
+  await user.send({
+    embeds: [
+      new EmbedBuilder()
+        .setColor("Green")
+        .setTitle("🎉 Test Passed")
+        .setDescription(
+          `🏆 Tier: **${rankEarned}**\n` +
+          `🎮 Gamemode: **${mode.toUpperCase()}**`
+        )
+    ]
+  }).catch(() => {});
+
+}
+
+// ================================
+// REPLY TO TESTER
+// ================================
+
+return interaction.reply({
+  content:
+    `✅ **${data.ign}** passed!\n🏆 Tier Assigned: **${rankEarned}**`,
+  ephemeral: true
+});
+
+}
+
 // ========================================
 // FAIL BUTTON
 // ========================================
