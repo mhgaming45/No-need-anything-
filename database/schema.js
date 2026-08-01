@@ -1,31 +1,40 @@
 const db = require("./database");
 
-// Players
+// Players Table
 db.prepare(`
 CREATE TABLE IF NOT EXISTS players (
     userId TEXT PRIMARY KEY,
-    username TEXT,
-    ign TEXT,
-    region TEXT,
+    username TEXT NOT NULL,
+    displayName TEXT,
+    avatar TEXT,
+
+    ign TEXT NOT NULL,
+    region TEXT NOT NULL,
+    age TEXT,
+    country TEXT,
+
     elo INTEGER DEFAULT 1000,
-    totalWins INTEGER DEFAULT 0,
-    totalLosses INTEGER DEFAULT 0,
+
+    wins INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
+
     registeredAt TEXT
 )
 `).run();
 
-// Tiers
+// Tier Table
 db.prepare(`
 CREATE TABLE IF NOT EXISTS tiers (
     userId TEXT,
     gamemode TEXT,
     tier TEXT,
     updatedAt TEXT,
+
     PRIMARY KEY(userId, gamemode)
 )
 `).run();
 
-// Queue
+// Queue Table
 db.prepare(`
 CREATE TABLE IF NOT EXISTS queue (
     userId TEXT,
@@ -34,18 +43,23 @@ CREATE TABLE IF NOT EXISTS queue (
 )
 `).run();
 
-// Matches
+// Matches Table
 db.prepare(`
 CREATE TABLE IF NOT EXISTS matches (
     matchId TEXT PRIMARY KEY,
+
     player1 TEXT,
     player2 TEXT,
+
     gamemode TEXT,
+
     winner TEXT,
     loser TEXT,
+
     status TEXT,
+
     createdAt TEXT
 )
 `).run();
 
-console.log("✅ Database Loaded");
+console.log("✅ Database Loaded Successfully");
