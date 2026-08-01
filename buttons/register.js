@@ -17,35 +17,27 @@ module.exports = {
 
         const ign = new TextInputBuilder()
             .setCustomId("ign")
-            .setLabel("Minecraft IGN")
+            .setLabel("Minecraft Username")
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
             .setMaxLength(16);
 
         const region = new TextInputBuilder()
             .setCustomId("region")
-            .setLabel("Region")
-            .setPlaceholder("AS / EU / NA")
+            .setLabel("Region (AS / EU / NA)")
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
-        const age = new TextInputBuilder()
-            .setCustomId("age")
-            .setLabel("Age")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-
-        const country = new TextInputBuilder()
-            .setCustomId("country")
-            .setLabel("Country")
+        const account = new TextInputBuilder()
+            .setCustomId("account")
+            .setLabel("Account Type (Premium / Cracked)")
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         modal.addComponents(
             new ActionRowBuilder().addComponents(ign),
             new ActionRowBuilder().addComponents(region),
-            new ActionRowBuilder().addComponents(age),
-            new ActionRowBuilder().addComponents(country)
+            new ActionRowBuilder().addComponents(account)
         );
 
         await interaction.showModal(modal);
