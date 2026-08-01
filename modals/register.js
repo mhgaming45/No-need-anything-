@@ -1,3 +1,7 @@
+const {
+    EmbedBuilder
+} = require("discord.js");
+
 const db = require("../database/database");
 
 module.exports = {
@@ -11,29 +15,105 @@ module.exports = {
         const age = interaction.fields.getTextInputValue("age");
         const country = interaction.fields.getTextInputValue("country");
 
-        const stmt = db.prepare(`
-            INSERT OR REPLACE INTO players
-            (userId, username, ign, region, registeredAt)
-            VALUES (?, ?, ?, ?, ?)
-        `);
+        const avatar = interaction.user.displayAvatarURL({
+            extension: "png",
+            size: 1024
+        });
 
-        stmt.run(
-            interaction.user.id,
-            interaction.user.username,
+        db.prepare(`
+        INSERT OR REPLACE INTO players
+        (
+            userId,
+            username,
+            displayName,
+            avatar,
             ign,
             region,
+            age,
+            country,
+            elo,
+            wins,
+            losses,
+            registeredAt
+        )
+        VALUES
+        (
+            ?,?,?,?,?,?,?,?,?,?,?,?
+        )
+        `).run(
+
+            interaction.user.id,
+            interaction.user.username,
+            interaction.member.displayName,
+            avatar,
+
+            ign,
+            region,
+            age,
+            country,
+
+            1000,
+            0,
+            0,
+
             new Date().toISOString()
+
         );
 
-        await interaction.reply({
-            content:
-`✅ Registration Successful!
+        const embed = new EmbedBuilder()
 
-👤 IGN: ${ign}
-🌍 Region: ${region}
-🎂 Age: ${age}
-🏳️ Country: ${country}`,
+            .setColor("Green")
+
+            .setTitle("✅ Registration Successful")
+
+            .setThumbnail(avatar)
+
+            .addFields(
+
+                {
+                    name: "Minecraft IGN",
+                    value: ign,
+                    inline: true
+                },
+
+                {
+                    name: "Region",
+                    value: region,
+                    inline: true
+                },
+
+                {
+                    name: "Age",
+                    value: age,
+                    inline: true
+                },
+
+                {
+                    name: "Country",
+                    value: country,
+                    inline: true
+                },
+
+                {
+                    name: "Starting ELO",
+                    value: "1000",
+                    inline: true
+                }
+
+            )
+
+            .setFooter({
+                text: "Professional Tier Testing Bot"
+            })
+
+            .setTimestamp();
+
+        await interaction.reply({
+
+            embeds: [embed],
+
             ephemeral: true
+
         });
 
     }
