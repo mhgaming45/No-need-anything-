@@ -647,8 +647,6 @@ setInterval(async () => {
 // NEXT PLAYER
 // ========================================
 
-const testerMode = global.testerMode || (global.testerMode = {});
-
 if (
   interaction.isButton() &&
   interaction.customId === "next_player"
