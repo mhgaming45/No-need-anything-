@@ -10,11 +10,9 @@ CREATE TABLE IF NOT EXISTS players (
 
     ign TEXT NOT NULL,
     region TEXT NOT NULL,
-    age TEXT,
-    country TEXT,
+    accountType TEXT NOT NULL,
 
     elo INTEGER DEFAULT 1000,
-
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0,
 
@@ -22,19 +20,18 @@ CREATE TABLE IF NOT EXISTS players (
 )
 `).run();
 
-// Tier Table
+// Tiers
 db.prepare(`
 CREATE TABLE IF NOT EXISTS tiers (
     userId TEXT,
     gamemode TEXT,
     tier TEXT,
     updatedAt TEXT,
-
     PRIMARY KEY(userId, gamemode)
 )
 `).run();
 
-// Queue Table
+// Queue
 db.prepare(`
 CREATE TABLE IF NOT EXISTS queue (
     userId TEXT,
@@ -43,21 +40,16 @@ CREATE TABLE IF NOT EXISTS queue (
 )
 `).run();
 
-// Matches Table
+// Matches
 db.prepare(`
 CREATE TABLE IF NOT EXISTS matches (
     matchId TEXT PRIMARY KEY,
-
     player1 TEXT,
     player2 TEXT,
-
     gamemode TEXT,
-
     winner TEXT,
     loser TEXT,
-
     status TEXT,
-
     createdAt TEXT
 )
 `).run();
