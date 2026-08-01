@@ -12,8 +12,7 @@ module.exports = {
 
         const ign = interaction.fields.getTextInputValue("ign");
         const region = interaction.fields.getTextInputValue("region");
-        const age = interaction.fields.getTextInputValue("age");
-        const country = interaction.fields.getTextInputValue("country");
+        const accountType = interaction.fields.getTextInputValue("account");
 
         const avatar = interaction.user.displayAvatarURL({
             extension: "png",
@@ -29,8 +28,7 @@ module.exports = {
             avatar,
             ign,
             region,
-            age,
-            country,
+            accountType,
             elo,
             wins,
             losses,
@@ -38,7 +36,7 @@ module.exports = {
         )
         VALUES
         (
-            ?,?,?,?,?,?,?,?,?,?,?,?
+            ?,?,?,?,?,?,?,?,?,?,?
         )
         `).run(
 
@@ -49,8 +47,7 @@ module.exports = {
 
             ign,
             region,
-            age,
-            country,
+            accountType,
 
             1000,
             0,
@@ -61,59 +58,39 @@ module.exports = {
         );
 
         const embed = new EmbedBuilder()
-
             .setColor("Green")
-
             .setTitle("✅ Registration Successful")
-
             .setThumbnail(avatar)
-
             .addFields(
-
                 {
-                    name: "Minecraft IGN",
+                    name: "Minecraft Username",
                     value: ign,
                     inline: true
                 },
-
                 {
                     name: "Region",
                     value: region,
                     inline: true
                 },
-
                 {
-                    name: "Age",
-                    value: age,
+                    name: "Account Type",
+                    value: accountType,
                     inline: true
                 },
-
-                {
-                    name: "Country",
-                    value: country,
-                    inline: true
-                },
-
                 {
                     name: "Starting ELO",
                     value: "1000",
                     inline: true
                 }
-
             )
-
             .setFooter({
                 text: "Professional Tier Testing Bot"
             })
-
             .setTimestamp();
 
         await interaction.reply({
-
             embeds: [embed],
-
             ephemeral: true
-
         });
 
     }
