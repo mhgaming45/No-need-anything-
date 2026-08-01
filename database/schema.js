@@ -31,12 +31,18 @@ CREATE TABLE IF NOT EXISTS tiers (
 )
 `).run();
 
-// Queue
+// Queue Table
 db.prepare(`
 CREATE TABLE IF NOT EXISTS queue (
-    userId TEXT,
+
+    userId TEXT PRIMARY KEY,
+
+    username TEXT,
+
     gamemode TEXT,
+
     joinedAt TEXT
+
 )
 `).run();
 
