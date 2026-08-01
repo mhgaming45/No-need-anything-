@@ -66,6 +66,7 @@ const queues = {
   cart: [],
   vanilla: []
 };
+const testerMode = global.testerMode || (global.testerMode = {});
 
 // ========================================
 // CLIENT
