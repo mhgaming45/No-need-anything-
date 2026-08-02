@@ -1,58 +1,161 @@
+require("dotenv").config();
+
 const fs = require("fs");
 const path = require("path");
 
-module.exports = (client) => {
+const {
+    Client,
+    Collection,
+    GatewayIntentBits,
+    Partials
+} = require("discord.js");
 
-    // Commands
-    const commandsPath = path.join(__dirname, "..", "commands");
+const client = new Client({
 
-    if (fs.existsSync(commandsPath)) {
-        const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+    intents: [
 
-        for (const file of commandFiles) {
-            const command = require(path.join(commandsPath, file));
-            client.commands.set(command.data.name, command);
-            console.log(`[COMMAND] ${command.data.name}`);
-        }
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+
+    ],
+
+    partials: [
+
+        Partials.Channel,
+        Partials.Message,
+        Partials.User
+
+    ]
+
+});
+
+client.commands = new Collection();
+client.buttons = new Collection();
+client.modals = new Collection();
+
+// =========================
+// DATABASE
+// =========================
+require("./database/database");
+
+// =========================
+// COMMANDS
+// =========================
+
+const commandFiles = fs.readdirSync("./commands")
+.filter(file => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+
+    const command = require(`./commands/${file}`);
+
+    client.commands.set(
+
+        command.data.name,
+        command
+
+    );
+
+}
+
+// =========================
+// BUTTONS
+// =========================
+
+const buttonFiles = fs.readdirSync("./buttons")
+.filter(file => file.endsWith(".js"));
+
+for (const file of buttonFiles) {
+
+    const button = require(`./buttons/${file}`);
+
+    client.buttons.set(
+
+        button.id,
+        button
+
+    );
+
+}
+
+// =========================
+// MODALS
+// =========================
+
+const modalFiles = fs.readdirSync("./modals")
+.filter(file => file.endsWith(".js"));
+
+for (const file of modalFiles) {
+
+    const modal = require(`./modals/${file}`);
+
+    client.modals.set(
+
+        modal.id,
+        modal
+
+    );
+
+}
+
+// =========================
+// EVENTS
+// =========================
+
+const eventFiles = fs.readdirSync("./events")
+.filter(file => file.endsWith(".js"));
+
+for (const file of eventFiles) {
+
+    const event = require(`./events/${file}`);
+
+    if (event.once) {
+
+        client.once(
+
+            event.name,
+
+            (...args) => event.execute(...args, client)
+
+        );
+
+    } else {
+
+        client.on(
+
+            event.name,
+
+            (...args) => event.execute(...args, client)
+
+        );
+
     }
 
-    // Buttons
-    const buttonsPath = path.join(__dirname, "..", "buttons");
+}
 
-    if (fs.existsSync(buttonsPath)) {
-        const buttonFiles = fs.readdirSync(buttonsPath).filter(file => file.endsWith(".js"));
+// =========================
+// READY
+// =========================
 
-        for (const file of buttonFiles) {
-            const button = require(path.join(buttonsPath, file));
-            client.buttons.set(button.id, button);
-            console.log(`[BUTTON] ${button.id}`);
-        }
-    }
+client.once("ready", () => {
 
-    // Modals
-    const modalsPath = path.join(__dirname, "..", "modals");
+    console.log("==============================");
+    console.log(`✅ Logged in as ${client.user.tag}`);
+    console.log("==============================");
 
-    if (fs.existsSync(modalsPath)) {
-        const modalFiles = fs.readdirSync(modalsPath).filter(file => file.endsWith(".js"));
+});
 
-        for (const file of modalFiles) {
-            const modal = require(path.join(modalsPath, file));
-            client.modals.set(modal.id, modal);
-            console.log(`[MODAL] ${modal.id}`);
-        }
-    }
+// =========================
+// ERROR HANDLER
+// =========================
 
-    // Select Menus
-    const menusPath = path.join(__dirname, "..", "selectMenus");
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
-    if (fs.existsSync(menusPath)) {
-        const menuFiles = fs.readdirSync(menusPath).filter(file => file.endsWith(".js"));
+// =========================
+// LOGIN
+// =========================
 
-        for (const file of menuFiles) {
-            const menu = require(path.join(menusPath, file));
-            client.selectMenus.set(menu.id, menu);
-            console.log(`[MENU] ${menu.id}`);
-        }
-    }
-
-};
+client.login(process.env.TOKEN);
