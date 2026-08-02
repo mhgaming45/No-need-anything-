@@ -93,6 +93,18 @@ module.exports = {
 
         }
 
+const db = require("../database/database");
+
+db.prepare(`
+INSERT OR REPLACE INTO queue_messages
+(gamemode, channelId, messageId)
+VALUES (?, ?, ?)
+`).run(
+    mode,
+    channel.id,
+    msg.id
+);
+
         await interaction.followUp({
             content: "✅ Queue panels created successfully!",
             ephemeral: true
