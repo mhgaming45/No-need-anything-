@@ -7,7 +7,6 @@ module.exports = {
     settings: {
 
         embedColor: "#5865F2",
-
         footer: "Professional Tier Testing Bot"
 
     },
@@ -18,6 +17,7 @@ module.exports = {
 
     gamemodes: [
 
+        "uhc",
         "nethpot",
         "vanilla",
         "smp",
@@ -31,47 +31,47 @@ module.exports = {
     // CHANNELS
     // ==========================
 
-    channels: {
+    queueChannels: {
 
-        register: "REGISTER_CHANNEL_ID",
+        register: "1528379939450126418",
 
-        logs: "LOG_CHANNEL_ID",
+        logs: "1528380129829453945",
 
-        results: "RESULTS_CHANNEL_ID",
+        result: "1529530008924586116",
 
-        nethpot: "NETHPOT_QUEUE_CHANNEL_ID",
+        uhc: "1530230068339540081",
 
-        vanilla: "VANILLA_QUEUE_CHANNEL_ID",
+        mace: "1530230492580806787",
 
-        smp: "SMP_QUEUE_CHANNEL_ID",
+        nethpot: "1530230675792465920",
 
-        sword: "SWORD_QUEUE_CHANNEL_ID",
+        smp: "1530231437154844763",
 
-        mace: "MACE_QUEUE_CHANNEL_ID",
+        sword: "1530231022304624680",
 
-        axe: "AXE_QUEUE_CHANNEL_ID"
+        axe: "1530231136872042677",
+
+        vanilla: "1530391077687791656"
 
     },
 
     // ==========================
-    // ROLES
+    // TIER ROLES
     // ==========================
 
-    roles: {
+    tierRoles: {
 
-        tester: "TESTER_ROLE_ID",
+        LT5: "1532653229723091105",
+        LT4: "1532653270227747006",
+        LT3: "1532653314653556826",
+        LT2: "1532653346819674143",
+        LT1: "1532653387177267210",
 
-        ht5: "HT5_ROLE_ID",
-        ht4: "HT4_ROLE_ID",
-        ht3: "HT3_ROLE_ID",
-        ht2: "HT2_ROLE_ID",
-        ht1: "HT1_ROLE_ID",
-
-        lt1: "LT1_ROLE_ID",
-        lt2: "LT2_ROLE_ID",
-        lt3: "LT3_ROLE_ID",
-        lt4: "LT4_ROLE_ID",
-        lt5: "LT5_ROLE_ID"
+        HT5: "1532653725871509584",
+        HT4: "1532653641171861606",
+        HT3: "1532653584963866645",
+        HT2: "1532653538289913877",
+        HT1: "1532653494589460540"
 
     },
 
@@ -80,6 +80,8 @@ module.exports = {
     // ==========================
 
     emojis: {
+
+        uhc: "<:uhc:1500781212590018580>",
 
         nethpot: "<:neth:1508477782902964404>",
 
