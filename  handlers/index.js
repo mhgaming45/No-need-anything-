@@ -89,7 +89,7 @@ const modalFiles = fs.readdirSync("../modals")
 
 for (const file of modalFiles) {
 
-    const modal = require(`./modals/${file}`);
+    const modal = require(`../modals/${file}`);
 
     client.modals.set(
 
@@ -104,12 +104,12 @@ for (const file of modalFiles) {
 // EVENTS
 // =========================
 
-const eventFiles = fs.readdirSync("./events")
+const eventFiles = fs.readdirSync("../events")
 .filter(file => file.endsWith(".js"));
 
 for (const file of eventFiles) {
 
-    const event = require(`./events/${file}`);
+    const event = require(`../events/${file}`);
 
     if (event.once) {
 
