@@ -1,8 +1,5 @@
 const {
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
+    EmbedBuilder
 } = require("discord.js");
 
 const db = require("../database/database");
@@ -10,80 +7,102 @@ const config = require("../config");
 
 module.exports = async (client, gamemode) => {
 
-    // Queue Panel Data
+    // Queue Message
     const panel = db.prepare(`
-        SELECT * FROM queue_messages
+        SELECT *
+        FROM queue_messages
         WHERE gamemode = ?
     `).get(gamemode);
 
     if (!panel) return;
 
-    // Channel
     const channel = await client.channels
         .fetch(panel.channelId)
         .catch(() => null);
 
     if (!channel) return;
 
-    // Message
     const message = await channel.messages
         .fetch(panel.messageId)
         .catch(() => null);
 
     if (!message) return;
 
+    // Active Test
+    const active = db.prepare(`
+        SELECT *
+        FROM active_tests
+        WHERE gamemode = ?
+    `).get(gamemode);
+
     // Queue Players
-    const players = db.prepare(`
+    const queue = db.prepare(`
         SELECT *
         FROM queue
         WHERE gamemode = ?
         ORDER BY joinedAt ASC
     `).all(gamemode);
 
-    let queue = "```No players in queue.```";
+    // Remove current testing player from list
+    const players = active
+        ? queue.filter(q => q.userId !== active.playerId)
+        : queue;
 
-    if (players.length) {
+    let description = "";
 
-        queue = players
-            .map((player, index) => {
+    if (players.length === 0) {
 
-                return `**#${index + 1}** • <@${player.userId}>`;
+        description = "```No players in queue.```";
 
-            })
+    } else {
+
+        description = players
+            .map((p, i) => `${i + 1}. <@${p.userId}>`)
             .join("\n");
 
     }
 
-    // Embed
     const embed = new EmbedBuilder()
 
-        .setColor(config.settings.embedColor)
+        .setColor("#5865F2")
 
-        .setTitle(`🎮 ${gamemode.toUpperCase()} QUEUE`)
+        .setTitle(
+            `${config.emojis[gamemode]} ${gamemode.toUpperCase()} Queue`
+        )
 
         .addFields(
 
             {
-                name: "Status",
-                value: "🟢 OPEN",
+                name: "🟢 Status",
+                value: active ? "Testing" : "Open",
                 inline: true
+            },
+
+            {
+                name: "👨‍⚖️ Current Tester",
+                value: active
+                    ? `<@${active.testerId}>`
+                    : "None",
+                inline: true
+            },
+
+            {
+                name: "👤 Current Player",
+                value: active
+                    ? `<@${active.playerId}>`
+                    : "None",
+                inline: true
+            },
+
+            {
+                name: "━━━━━━━━━━━━━━",
+                value: description
             },
 
             {
                 name: "Players",
                 value: `${players.length}`,
                 inline: true
-            },
-
-            {
-                name: "Current Tester",
-                value: "None",
-                inline: true
-            },
-
-            {
-                name: "Queue List",
-                value: queue
             }
 
         )
@@ -94,35 +113,9 @@ module.exports = async (client, gamemode) => {
 
         .setTimestamp();
 
-    // Buttons
-    const row = new ActionRowBuilder()
-
-        .addComponents(
-
-            new ButtonBuilder()
-
-                .setCustomId(`queue_${gamemode}`)
-
-                .setLabel("Join Queue")
-
-                .setStyle(ButtonStyle.Success),
-
-            new ButtonBuilder()
-
-                .setCustomId("leave_queue")
-
-                .setLabel("Leave Queue")
-
-                .setStyle(ButtonStyle.Danger)
-
-        );
-
-    // Update Queue Panel
     await message.edit({
 
-        embeds: [embed],
-
-        components: [row]
+        embeds: [embed]
 
     });
 
