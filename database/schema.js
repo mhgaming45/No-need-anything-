@@ -1,8 +1,11 @@
 const db = require("./database");
 
-// Players Table
+// ===============================
+// PLAYERS
+// ===============================
 db.prepare(`
 CREATE TABLE IF NOT EXISTS players (
+
     userId TEXT PRIMARY KEY,
     username TEXT NOT NULL,
     displayName TEXT,
@@ -13,60 +16,100 @@ CREATE TABLE IF NOT EXISTS players (
     accountType TEXT NOT NULL,
 
     elo INTEGER DEFAULT 1000,
+
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0,
 
     registeredAt TEXT
+
 )
 `).run();
 
-// Tiers
+// ===============================
+// PLAYER TIERS
+// ===============================
 db.prepare(`
 CREATE TABLE IF NOT EXISTS tiers (
+
     userId TEXT,
     gamemode TEXT,
     tier TEXT,
     updatedAt TEXT,
+
     PRIMARY KEY(userId, gamemode)
+
 )
 `).run();
 
-// Queue Table
+// ===============================
+// QUEUE
+// ===============================
 db.prepare(`
 CREATE TABLE IF NOT EXISTS queue (
 
     userId TEXT PRIMARY KEY,
-
     username TEXT,
-
     gamemode TEXT,
-
-    joinedAt TEXT
+    joinedAt INTEGER
 
 )
 `).run();
 
-// Queue Messages
-db.prepare(`
-CREATE TABLE IF NOT EXISTS queue_messages (
-    gamemode TEXT PRIMARY KEY,
-    channelId TEXT,
-    messageId TEXT
-)
-`).run();
-
-// Matches
+// ===============================
+// MATCH HISTORY
+// ===============================
 db.prepare(`
 CREATE TABLE IF NOT EXISTS matches (
+
     matchId TEXT PRIMARY KEY,
+
     player1 TEXT,
     player2 TEXT,
+
     gamemode TEXT,
+
     winner TEXT,
     loser TEXT,
+
+    tester TEXT,
+
     status TEXT,
+
     createdAt TEXT
+
 )
 `).run();
 
-console.log("✅ Database Loaded Successfully");
+// ===============================
+// QUEUE PANELS
+// ===============================
+db.prepare(`
+CREATE TABLE IF NOT EXISTS queue_messages (
+
+    gamemode TEXT PRIMARY KEY,
+
+    channelId TEXT,
+
+    messageId TEXT
+
+)
+`).run();
+
+// ===============================
+// BOT SETTINGS
+// ===============================
+db.prepare(`
+CREATE TABLE IF NOT EXISTS settings (
+
+    key TEXT PRIMARY KEY,
+
+    value TEXT
+
+)
+`).run();
+
+console.log("==================================");
+console.log("✅ SQLite Database Loaded");
+console.log("==================================");
+
+module.exports = db;
