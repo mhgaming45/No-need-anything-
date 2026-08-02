@@ -1,7 +1,3 @@
-const {
-    EmbedBuilder
-} = require("discord.js");
-
 const db = require("../database/database");
 
 module.exports = {
@@ -12,12 +8,7 @@ module.exports = {
 
         const ign = interaction.fields.getTextInputValue("ign");
         const region = interaction.fields.getTextInputValue("region");
-        const accountType = interaction.fields.getTextInputValue("account");
-
-        const avatar = interaction.user.displayAvatarURL({
-            extension: "png",
-            size: 1024
-        });
+        const account = interaction.fields.getTextInputValue("account");
 
         db.prepare(`
         INSERT OR REPLACE INTO players
@@ -29,68 +20,34 @@ module.exports = {
             ign,
             region,
             accountType,
-            elo,
-            wins,
-            losses,
             registeredAt
         )
         VALUES
-        (
-            ?,?,?,?,?,?,?,?,?,?,?
-        )
+        (?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-
             interaction.user.id,
             interaction.user.username,
-            interaction.member.displayName,
-            avatar,
-
+            interaction.user.displayName,
+            interaction.user.displayAvatarURL(),
             ign,
             region,
-            accountType,
-
-            1000,
-            0,
-            0,
-
+            account,
             new Date().toISOString()
-
         );
 
-        const embed = new EmbedBuilder()
-            .setColor("Green")
-            .setTitle("✅ Registration Successful")
-            .setThumbnail(avatar)
-            .addFields(
-                {
-                    name: "Minecraft Username",
-                    value: ign,
-                    inline: true
-                },
-                {
-                    name: "Region",
-                    value: region,
-                    inline: true
-                },
-                {
-                    name: "Account Type",
-                    value: accountType,
-                    inline: true
-                },
-                {
-                    name: "Starting ELO",
-                    value: "1000",
-                    inline: true
-                }
-            )
-            .setFooter({
-                text: "Professional Tier Testing Bot"
-            })
-            .setTimestamp();
-
         await interaction.reply({
-            embeds: [embed],
+
+            content:
+`✅ Registration Completed!
+
+👤 Username: ${ign}
+🌍 Region: ${region}
+💎 Account: ${account}
+
+Now select your gamemode from the Register Panel.`,
+
             ephemeral: true
+
         });
 
     }
