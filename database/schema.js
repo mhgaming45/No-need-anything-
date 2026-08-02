@@ -46,6 +46,15 @@ CREATE TABLE IF NOT EXISTS queue (
 )
 `).run();
 
+// Queue Messages
+db.prepare(`
+CREATE TABLE IF NOT EXISTS queue_messages (
+    gamemode TEXT PRIMARY KEY,
+    channelId TEXT,
+    messageId TEXT
+)
+`).run();
+
 // Matches
 db.prepare(`
 CREATE TABLE IF NOT EXISTS matches (
