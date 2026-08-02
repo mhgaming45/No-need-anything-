@@ -10,50 +10,111 @@ const config = require("../config");
 
 module.exports = async (client, gamemode) => {
 
-    const channelId = config.channels[gamemode];
-    if (!channelId) return;
+    // Queue Panel Data
+    const panel = db.prepare(`
+        SELECT * FROM queue_messages
+        WHERE gamemode = ?
+    `).get(gamemode);
 
-    const channel = await client.channels.fetch(channelId).catch(() => null);
+    if (!panel) return;
+
+    // Channel
+    const channel = await client.channels
+        .fetch(panel.channelId)
+        .catch(() => null);
+
     if (!channel) return;
 
-    const players = db.prepare(
-        "SELECT * FROM queue WHERE gamemode = ? ORDER BY joinedAt ASC"
-    ).all(gamemode);
+    // Message
+    const message = await channel.messages
+        .fetch(panel.messageId)
+        .catch(() => null);
 
-    const queueList = players.length
-        ? players.map((p, i) => `**#${i + 1}** • <@${p.userId}>`).join("\n")
-        : "No players in queue.";
+    if (!message) return;
 
+    // Queue Players
+    const players = db.prepare(`
+        SELECT *
+        FROM queue
+        WHERE gamemode = ?
+        ORDER BY joinedAt ASC
+    `).all(gamemode);
+
+    let queue = "```No players in queue.```";
+
+    if (players.length) {
+
+        queue = players
+            .map((player, index) => {
+
+                return `**#${index + 1}** • <@${player.userId}>`;
+
+            })
+            .join("\n");
+
+    }
+
+    // Embed
     const embed = new EmbedBuilder()
-        .setColor("#5865F2")
-        .setTitle(`${gamemode.toUpperCase()} Queue`)
-        .setDescription(queueList)
+
+        .setColor(config.settings.embedColor)
+
+        .setTitle(`🎮 ${gamemode.toUpperCase()} QUEUE`)
+
         .addFields(
+
             {
                 name: "Status",
                 value: "🟢 OPEN",
                 inline: true
             },
+
             {
                 name: "Players",
                 value: `${players.length}`,
                 inline: true
+            },
+
+            {
+                name: "Current Tester",
+                value: "None",
+                inline: true
+            },
+
+            {
+                name: "Queue List",
+                value: queue
             }
+
         )
+
+        .setFooter({
+            text: config.settings.footer
+        })
+
         .setTimestamp();
 
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`queue_${gamemode}`)
-            .setLabel("Join Queue")
-            .setStyle(ButtonStyle.Success),
+    // Buttons
+    const row = new ActionRowBuilder()
 
-        new ButtonBuilder()
-            .setCustomId("leave_queue")
-            .setLabel("Leave Queue")
-            .setStyle(ButtonStyle.Danger)
-    );
+        .addComponents(
 
-    // Message ID ko baad me config/database me save karenge.
-    // Abhi first version complete kar rahe hain.
-};
+            new ButtonBuilder()
+
+                .setCustomId(`queue_${gamemode}`)
+
+                .setLabel("Join Queue")
+
+                .setStyle(ButtonStyle.Success),
+
+            new ButtonBuilder()
+
+                .setCustomId("leave_queue")
+
+                .setLabel("Leave Queue")
+
+                .setStyle(ButtonStyle.Danger)
+
+        );
+
+    // Update Queue Panel
