@@ -1,66 +1,141 @@
 const { Events } = require("discord.js");
 
 module.exports = {
+
     name: Events.InteractionCreate,
 
     async execute(interaction, client) {
 
-        // Slash Commands
-        if (interaction.isChatInputCommand()) {
+        try {
 
-            const command = client.commands.get(interaction.commandName);
-            if (!command) return;
+            // ===========================
+            // SLASH COMMANDS
+            // ===========================
 
-            return command.execute(interaction, client);
-        }
+            if (interaction.isChatInputCommand()) {
 
-        // Buttons
-        if (interaction.isButton()) {
+                const command = client.commands.get(
+                    interaction.commandName
+                );
 
-            // Queue Buttons
-            if (interaction.customId.startsWith("queue_")) {
-                const queueButton = client.buttons.get("queue");
-                if (queueButton) {
-                    return queueButton.execute(interaction, client);
-                }
+                if (!command) return;
+
+                await command.execute(
+                    interaction,
+                    client
+                );
+
             }
 
-            // Register Button
-            if (interaction.customId === "register") {
-                const register = client.buttons.get("register");
-                if (register) {
-                    return register.execute(interaction, client);
+            // ===========================
+            // BUTTONS
+            // ===========================
+
+            if (interaction.isButton()) {
+
+                // Register Button
+                if (interaction.customId === "register") {
+
+                    const button =
+                        client.buttons.get("register");
+
+                    if (button)
+                        return button.execute(
+                            interaction,
+                            client
+                        );
+
                 }
+
+                // Leave Queue
+                if (interaction.customId === "leave_queue") {
+
+                    const button =
+                        client.buttons.get("leave_queue");
+
+                    if (button)
+                        return button.execute(
+                            interaction,
+                            client
+                        );
+
+                }
+
+                // Queue Buttons
+                if (
+                    interaction.customId.startsWith("queue_")
+                ) {
+
+                    const button =
+                        client.buttons.get("queue");
+
+                    if (button)
+                        return button.execute(
+                            interaction,
+                            client
+                        );
+
+                }
+
             }
 
-            // Leave Queue
-            if (interaction.customId === "leave_queue") {
-                const leave = client.buttons.get("leaveQueue");
-                if (leave) {
-                    return leave.execute(interaction, client);
-                }
+            // ===========================
+            // MODALS
+            // ===========================
+
+            if (interaction.isModalSubmit()) {
+
+                const modal =
+                    client.modals.get(
+                        interaction.customId
+                    );
+
+                if (!modal) return;
+
+                await modal.execute(
+                    interaction,
+                    client
+                );
+
             }
 
-            // Profile
-            if (interaction.customId === "profile") {
-                const profile = client.buttons.get("profile");
-                if (profile) {
-                    return profile.execute(interaction, client);
-                }
+        } catch (err) {
+
+            console.error(err);
+
+            if (
+                interaction.deferred ||
+                interaction.replied
+            ) {
+
+                await interaction
+                    .followUp({
+
+                        content:
+                            "❌ An unexpected error occurred.",
+
+                        ephemeral: true
+
+                    })
+                    .catch(() => {});
+
+            } else {
+
+                await interaction
+                    .reply({
+
+                        content:
+                            "❌ An unexpected error occurred.",
+
+                        ephemeral: true
+
+                    })
+                    .catch(() => {});
+
             }
-        }
 
-        // Select Menus
-        if (interaction.isStringSelectMenu()) {
-            const menu = client.selectMenus.get(interaction.customId);
-            if (menu) return menu.execute(interaction, client);
-        }
-
-        // Modals
-        if (interaction.isModalSubmit()) {
-            const modal = client.modals.get(interaction.customId);
-            if (modal) return modal.execute(interaction, client);
         }
 
     }
+
 };
