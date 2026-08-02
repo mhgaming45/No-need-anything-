@@ -38,18 +38,18 @@ client.modals = new Collection();
 // =========================
 // DATABASE
 // =========================
-require("./database/database");
+require("../database/database");
 
 // =========================
 // COMMANDS
 // =========================
 
-const commandFiles = fs.readdirSync("./commands")
+const commandFiles = fs.readdirSync("../commands")
 .filter(file => file.endsWith(".js"));
 
 for (const file of commandFiles) {
 
-    const command = require(`./commands/${file}`);
+    const command = require(`../commands/${file}`);
 
     client.commands.set(
 
@@ -64,12 +64,12 @@ for (const file of commandFiles) {
 // BUTTONS
 // =========================
 
-const buttonFiles = fs.readdirSync("./buttons")
+const buttonFiles = fs.readdirSync("../buttons")
 .filter(file => file.endsWith(".js"));
 
 for (const file of buttonFiles) {
 
-    const button = require(`./buttons/${file}`);
+    const button = require(`../buttons/${file}`);
 
     client.buttons.set(
 
@@ -84,7 +84,7 @@ for (const file of buttonFiles) {
 // MODALS
 // =========================
 
-const modalFiles = fs.readdirSync("./modals")
+const modalFiles = fs.readdirSync("../modals")
 .filter(file => file.endsWith(".js"));
 
 for (const file of modalFiles) {
