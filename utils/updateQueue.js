@@ -118,3 +118,12 @@ module.exports = async (client, gamemode) => {
         );
 
     // Update Queue Panel
+    await message.edit({
+
+        embeds: [embed],
+
+        components: [row]
+
+    });
+
+};
