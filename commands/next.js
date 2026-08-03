@@ -1,41 +1,59 @@
 const {
     SlashCommandBuilder,
+    PermissionFlagsBits,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle,
-    PermissionFlagsBits
+    ButtonStyle
 } = require("discord.js");
 
 const db = require("../database/database");
+const config = require("../config");
+const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
-        .setName("next")
-        .setDescription("Get next player")
+        .setName("nextplayer")
+        .setDescription("Start testing the next player")
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Gamemode")
+                .setDescription("Select gamemode")
                 .setRequired(true)
                 .addChoices(
-                    { name: "UHC", value: "uhc" },
-                    { name: "NethPot", value: "nethpot" },
-                    { name: "Vanilla", value: "vanilla" },
-                    { name: "SMP", value: "smp" },
-                    { name: "Sword", value: "sword" },
-                    { name: "Mace", value: "mace" },
-                    { name: "Axe", value: "axe" }
+                    ...config.gamemodes.map(g => ({
+                        name: g.toUpperCase(),
+                        value: g
+                    }))
                 )
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
+        ),
 
-    async execute(interaction) {
+    async execute(interaction, client) {
 
         const gamemode =
             interaction.options.getString("gamemode");
 
+        // Already active?
+        const active = db.prepare(`
+            SELECT *
+            FROM active_tests
+            WHERE gamemode = ?
+        `).get(gamemode);
+
+        if (active) {
+
+            return interaction.reply({
+                content: "❌ A test is already running.",
+                ephemeral: true
+            });
+
+        }
+
+        // Next player
         const player = db.prepare(`
             SELECT *
             FROM queue
@@ -45,15 +63,16 @@ module.exports = {
         `).get(gamemode);
 
         if (!player) {
+
             return interaction.reply({
                 content: "❌ Queue is empty.",
                 ephemeral: true
             });
+
         }
 
-        // Active Test Save
         db.prepare(`
-            INSERT OR REPLACE INTO active_tests
+            INSERT INTO active_tests
             (
                 gamemode,
                 testerId,
@@ -68,48 +87,36 @@ module.exports = {
             Date.now()
         );
 
-        const profile = db.prepare(`
-            SELECT *
-            FROM players
-            WHERE userId = ?
-        `).get(player.userId);
+        await updateQueue(client, gamemode);
 
         const embed = new EmbedBuilder()
-            .setColor("Green")
-            .setTitle("🎯 Next Player")
+            .setColor(config.settings.embedColor)
+            .setTitle(`${gamemode.toUpperCase()} Test Started`)
             .addFields(
                 {
                     name: "Player",
-                    value: `<@${player.userId}>`
-                },
-                {
-                    name: "IGN",
-                    value: profile?.ign || "Unknown",
+                    value: `<@${player.userId}>`,
                     inline: true
                 },
                 {
-                    name: "Region",
-                    value: profile?.region || "Unknown",
-                    inline: true
-                },
-                {
-                    name: "Gamemode",
-                    value: gamemode.toUpperCase(),
+                    name: "Tester",
+                    value: `<@${interaction.user.id}>`,
                     inline: true
                 }
             );
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("pass")
-                .setLabel("PASS")
-                .setStyle(ButtonStyle.Success),
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`pass_${gamemode}_${player.userId}`)
+                    .setLabel("PASS")
+                    .setStyle(ButtonStyle.Success),
 
-            new ButtonBuilder()
-                .setCustomId("fail")
-                .setLabel("FAIL")
-                .setStyle(ButtonStyle.Danger)
-        );
+                new ButtonBuilder()
+                    .setCustomId(`fail_${gamemode}_${player.userId}`)
+                    .setLabel("FAIL")
+                    .setStyle(ButtonStyle.Danger)
+            );
 
         await interaction.reply({
             embeds: [embed],
