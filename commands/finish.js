@@ -1,70 +1,53 @@
-// Previous Tier
-const oldTierData = db.prepare(`
-SELECT tier
-FROM tiers
-WHERE userId = ?
-AND gamemode = ?
-`).get(member.id, gamemode);
+const {
+    SlashCommandBuilder,
+    PermissionFlagsBits
+} = require("discord.js");
 
-const previousTier = oldTierData?.tier || "Unranked";
+const db = require("../database/database");
+const updateQueue = require("../utils/updateQueue");
 
-// Save New Tier
-db.prepare(`
-INSERT OR REPLACE INTO tiers
-(userId, gamemode, tier, updatedAt)
-VALUES (?, ?, ?, ?)
-`).run(
-    member.id,
-    gamemode,
-    tier,
-    new Date().toISOString()
-);
+module.exports = {
 
-// Results Channel
-const resultsChannel = interaction.guild.channels.cache.get(
-    config.channels.results
-);
+    data: new SlashCommandBuilder()
+        .setName("finish")
+        .setDescription("Finish current test")
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
-if (resultsChannel) {
+    async execute(interaction, client) {
 
-    const resultEmbed = new EmbedBuilder()
-        .setColor("#FFD700")
-        .setTitle(`🏆 ${member.user.username}'s Tier Update`)
-        .setThumbnail(member.user.displayAvatarURL())
-        .addFields(
-            {
-                name: "👨‍⚖️ Tester",
-                value: `<@${interaction.user.id}>`,
-                inline: true
-            },
-            {
-                name: "🎮 Game Mode",
-                value: gamemode.toUpperCase(),
-                inline: true
-            },
-            {
-                name: "⛏ Minecraft Username",
-                value: player.ign,
-                inline: true
-            },
-            {
-                name: "📉 Previous Rank",
-                value: previousTier,
-                inline: true
-            },
-            {
-                name: "🏅 Rank Earned",
-                value: tier,
-                inline: true
-            }
-        )
-        .setFooter({
-            text: "Professional Tier Testing"
-        })
-        .setTimestamp();
+        // Find active test by this tester
+        const active = db.prepare(`
+            SELECT *
+            FROM active_tests
+            WHERE testerId = ?
+        `).get(interaction.user.id);
 
-    await resultsChannel.send({
-        content: `<@${member.id}>`, // Player mention upar
-        embeds: [resultEmbed]
-    });
-}
+        if (!active) {
+            return interaction.reply({
+                content: "❌ You don't have any active test.",
+                ephemeral: true
+            });
+        }
+
+        // Remove player from queue
+        db.prepare(`
+            DELETE FROM queue
+            WHERE userId = ?
+        `).run(active.playerId);
+
+        // Remove active test
+        db.prepare(`
+            DELETE FROM active_tests
+            WHERE gamemode = ?
+        `).run(active.gamemode);
+
+        // Update queue panel
+        await updateQueue(client, active.gamemode);
+
+        await interaction.reply({
+            content: `✅ Test finished successfully.\nPlayer removed from **${active.gamemode.toUpperCase()}** queue.`
+        });
+
+    }
+
+};
