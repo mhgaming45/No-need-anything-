@@ -35,9 +35,9 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
 
             new ButtonBuilder()
-                .setCustomId("settier")
-                .setLabel("Set Tier")
-                .setStyle(ButtonStyle.Primary)
+    .setCustomId(`set_tier_${gamemode}_${userId}`)
+    .setLabel("SET TIER")
+    .setStyle(ButtonStyle.Primary);
 
         );
 
