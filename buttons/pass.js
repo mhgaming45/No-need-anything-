@@ -1,16 +1,11 @@
-const {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
-} = require("discord.js");
-
 const db = require("../database/database");
+const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
 
-    id: "pass",
+    id: "fail",
 
-    async execute(interaction) {
+    async execute(interaction, client) {
 
         const active = db.prepare(`
             SELECT *
@@ -25,31 +20,37 @@ module.exports = {
             });
         }
 
-        // Add win
+        // Add loss
         db.prepare(`
             UPDATE players
-            SET wins = wins + 1
+            SET losses = losses + 1
             WHERE userId = ?
         `).run(active.playerId);
 
-        const row = new ActionRowBuilder().addComponents(
+        // Remove player from queue
+        db.prepare(`
+            DELETE FROM queue
+            WHERE userId = ?
+        `).run(active.playerId);
 
-            new ButtonBuilder()
-                .setCustomId("settier")
-                .setLabel("Set Tier")
-                .setStyle(ButtonStyle.Primary)
+        // Remove active test
+        db.prepare(`
+            DELETE FROM active_tests
+            WHERE gamemode = ?
+        `).run(active.gamemode);
 
-        );
+        // Update queue
+        await updateQueue(client, active.gamemode);
 
         await interaction.update({
 
             content:
-`✅ <@${active.playerId}> passed the test.
+`❌ <@${active.playerId}> failed the test.
 
-Click **Set Tier** to assign a tier.`,
+Player has been removed from the queue.`,
 
             embeds: [],
-            components: [row]
+            components: []
 
         });
 
