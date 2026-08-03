@@ -1,9 +1,13 @@
 module.exports = {
+
     name: "interactionCreate",
 
     async execute(interaction, client) {
 
-        // Slash Commands
+        // =========================
+        // SLASH COMMANDS
+        // =========================
+
         if (interaction.isChatInputCommand()) {
 
             const command = client.commands.get(interaction.commandName);
@@ -12,7 +16,7 @@ module.exports = {
 
             try {
 
-                await command.execute(interaction);
+                await command.execute(interaction, client);
 
             } catch (err) {
 
@@ -20,15 +24,15 @@ module.exports = {
 
                 if (interaction.replied || interaction.deferred) {
 
-                    interaction.followUp({
-                        content: "❌ An error occurred while executing this command.",
+                    await interaction.followUp({
+                        content: "❌ Command Error.",
                         ephemeral: true
                     });
 
                 } else {
 
-                    interaction.reply({
-                        content: "❌ An error occurred while executing this command.",
+                    await interaction.reply({
+                        content: "❌ Command Error.",
                         ephemeral: true
                     });
 
@@ -37,18 +41,42 @@ module.exports = {
             }
 
             return;
+
         }
 
-        // Buttons
+        // =========================
+        // BUTTONS
+        // =========================
+
         if (interaction.isButton()) {
 
-            const button = client.buttons.get(interaction.customId);
+            let button = client.buttons.get(interaction.customId);
+
+            // queue_uhc, queue_sword...
+            if (!button && interaction.customId.startsWith("queue_")) {
+                button = client.buttons.get("queue");
+            }
+
+            // pass_uhc_userid
+            if (!button && interaction.customId.startsWith("pass_")) {
+                button = client.buttons.get("pass");
+            }
+
+            // fail_uhc_userid
+            if (!button && interaction.customId.startsWith("fail_")) {
+                button = client.buttons.get("fail");
+            }
+
+            // set_tier_uhc_userid
+            if (!button && interaction.customId.startsWith("set_tier_")) {
+                button = client.buttons.get("set_tier");
+            }
 
             if (!button) return;
 
             try {
 
-                await button.execute(interaction);
+                await button.execute(interaction, client);
 
             } catch (err) {
 
@@ -56,9 +84,12 @@ module.exports = {
 
                 if (!interaction.replied) {
 
-                    interaction.reply({
-                        content: "❌ Button error.",
+                    await interaction.reply({
+
+                        content: "❌ Button Error.",
+
                         ephemeral: true
+
                     });
 
                 }
@@ -66,18 +97,32 @@ module.exports = {
             }
 
             return;
+
         }
 
-        // Modals
+        // =========================
+        // MODALS
+        // =========================
+
         if (interaction.isModalSubmit()) {
 
-            const modal = client.modals.get(interaction.customId);
+            let modal = client.modals.get(interaction.customId);
+
+            // register_modal
+            if (!modal && interaction.customId === "register_modal") {
+                modal = client.modals.get("register_modal");
+            }
+
+            // tier_modal_uhc_123456789
+            if (!modal && interaction.customId.startsWith("tier_modal_")) {
+                modal = client.modals.get("tier_modal");
+            }
 
             if (!modal) return;
 
             try {
 
-                await modal.execute(interaction);
+                await modal.execute(interaction, client);
 
             } catch (err) {
 
@@ -85,9 +130,12 @@ module.exports = {
 
                 if (!interaction.replied) {
 
-                    interaction.reply({
-                        content: "❌ Modal error.",
+                    await interaction.reply({
+
+                        content: "❌ Modal Error.",
+
                         ephemeral: true
+
                     });
 
                 }
