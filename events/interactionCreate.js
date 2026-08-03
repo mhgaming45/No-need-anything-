@@ -1,141 +1,71 @@
-const { Events } = require("discord.js");
-
 module.exports = {
-
-    name: Events.InteractionCreate,
+    name: "interactionCreate",
 
     async execute(interaction, client) {
 
         try {
 
-            // ===========================
-            // SLASH COMMANDS
-            // ===========================
-
+            // Slash Commands
             if (interaction.isChatInputCommand()) {
 
-                const command = client.commands.get(
-                    interaction.commandName
-                );
+                const command = client.commands.get(interaction.commandName);
 
                 if (!command) return;
 
-                await command.execute(
-                    interaction,
-                    client
-                );
-
+                await command.execute(interaction, client);
             }
 
-            // ===========================
-            // BUTTONS
-            // ===========================
+            // Buttons
+            else if (interaction.isButton()) {
 
-            if (interaction.isButton()) {
+                const button = client.buttons.get(interaction.customId);
 
-                // Register Button
-                if (interaction.customId === "register") {
+                if (!button) return;
 
-                    const button =
-                        client.buttons.get("register");
-
-                    if (button)
-                        return button.execute(
-                            interaction,
-                            client
-                        );
-
-                }
-
-                // Leave Queue
-                if (interaction.customId === "leave_queue") {
-
-                    const button =
-                        client.buttons.get("leave_queue");
-
-                    if (button)
-                        return button.execute(
-                            interaction,
-                            client
-                        );
-
-                }
-
-                // Queue Buttons
-                if (
-                    interaction.customId.startsWith("queue_")
-                ) {
-
-                    const button =
-                        client.buttons.get("queue");
-
-                    if (button)
-                        return button.execute(
-                            interaction,
-                            client
-                        );
-
-                }
-
+                await button.execute(interaction, client);
             }
 
-            // ===========================
-            // MODALS
-            // ===========================
+            // Modals
+            else if (interaction.isModalSubmit()) {
 
-            if (interaction.isModalSubmit()) {
-
-                const modal =
-                    client.modals.get(
-                        interaction.customId
-                    );
+                const modal = client.modals.get(interaction.customId);
 
                 if (!modal) return;
 
-                await modal.execute(
-                    interaction,
-                    client
-                );
+                await modal.execute(interaction, client);
+            }
 
+            // Select Menus (future use)
+            else if (interaction.isStringSelectMenu()) {
+
+                const menu = client.buttons.get(interaction.customId);
+
+                if (!menu) return;
+
+                await menu.execute(interaction, client);
             }
 
         } catch (err) {
 
             console.error(err);
 
-            if (
-                interaction.deferred ||
-                interaction.replied
-            ) {
+            if (interaction.replied || interaction.deferred) {
 
-                await interaction
-                    .followUp({
-
-                        content:
-                            "❌ An unexpected error occurred.",
-
-                        ephemeral: true
-
-                    })
-                    .catch(() => {});
+                await interaction.followUp({
+                    content: "❌ An error occurred while executing this interaction.",
+                    ephemeral: true
+                }).catch(() => {});
 
             } else {
 
-                await interaction
-                    .reply({
-
-                        content:
-                            "❌ An unexpected error occurred.",
-
-                        ephemeral: true
-
-                    })
-                    .catch(() => {});
+                await interaction.reply({
+                    content: "❌ An error occurred while executing this interaction.",
+                    ephemeral: true
+                }).catch(() => {});
 
             }
 
         }
 
     }
-
 };
