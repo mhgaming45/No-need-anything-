@@ -1,7 +1,10 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
-    EmbedBuilder
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    PermissionFlagsBits
 } = require("discord.js");
 
 const db = require("../database/database");
@@ -10,87 +13,79 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("start")
-        .setDescription("Start a tier test")
-        .addStringOption(option =>
-            option
-                .setName("gamemode")
-                .setDescription("Select Gamemode")
-                .setRequired(true)
-                .addChoices(
-                    { name: "NethPot", value: "nethpot" },
-                    { name: "Vanilla", value: "vanilla" },
-                    { name: "SMP", value: "smp" },
-                    { name: "Sword", value: "sword" },
-                    { name: "Mace", value: "mace" },
-                    { name: "Axe", value: "axe" }
-                )
-        )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
-        ),
+        .setDescription("Start current test")
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
 
-        const gamemode =
-            interaction.options.getString("gamemode");
+        const active = db.prepare(`
+            SELECT *
+            FROM active_tests
+            WHERE testerId = ?
+        `).get(interaction.user.id);
+
+        if (!active) {
+            return interaction.reply({
+                content: "❌ No active test found. Use /next first.",
+                ephemeral: true
+            });
+        }
 
         const player = db.prepare(`
-        SELECT *
-        FROM queue
-        WHERE gamemode = ?
-        ORDER BY joinedAt ASC
-        LIMIT 1
-        `).get(gamemode);
+            SELECT *
+            FROM players
+            WHERE userId = ?
+        `).get(active.playerId);
 
         if (!player) {
-
             return interaction.reply({
-
-                content:
-                    "❌ No players in queue.",
-
+                content: "❌ Player not found.",
                 ephemeral: true
-
             });
-
         }
 
         const embed = new EmbedBuilder()
-
-            .setColor("Green")
-
-            .setTitle("🎮 Tier Test Started")
-
+            .setColor("Blue")
+            .setTitle("🎯 Tier Test Started")
             .addFields(
-
                 {
                     name: "Player",
-                    value: `<@${player.userId}>`,
+                    value: `<@${active.playerId}>`,
                     inline: true
                 },
-
                 {
-                    name: "Tester",
-                    value: `${interaction.user}`,
+                    name: "IGN",
+                    value: player.ign,
                     inline: true
                 },
-
+                {
+                    name: "Region",
+                    value: player.region,
+                    inline: true
+                },
                 {
                     name: "Gamemode",
-                    value: gamemode.toUpperCase(),
+                    value: active.gamemode.toUpperCase(),
                     inline: true
                 }
-
             )
-
             .setTimestamp();
 
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("pass")
+                .setLabel("PASS")
+                .setStyle(ButtonStyle.Success),
+
+            new ButtonBuilder()
+                .setCustomId("fail")
+                .setLabel("FAIL")
+                .setStyle(ButtonStyle.Danger)
+        );
+
         await interaction.reply({
-
-            content: `<@${player.userId}>`,
-
-            embeds: [embed]
-
+            embeds: [embed],
+            components: [row]
         });
 
     }
