@@ -1,35 +1,35 @@
 const {
     SlashCommandBuilder,
     EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
     PermissionFlagsBits
 } = require("discord.js");
 
 const db = require("../database/database");
-const config = require("../config");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("next")
-        .setDescription("Get next player from queue")
+        .setDescription("Get next player")
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Select Gamemode")
+                .setDescription("Gamemode")
                 .setRequired(true)
                 .addChoices(
+                    { name: "UHC", value: "uhc" },
                     { name: "NethPot", value: "nethpot" },
                     { name: "Vanilla", value: "vanilla" },
                     { name: "SMP", value: "smp" },
                     { name: "Sword", value: "sword" },
-                    { name: "UHC", value: "uhc" },
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
         )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
-        ),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
 
@@ -45,57 +45,75 @@ module.exports = {
         `).get(gamemode);
 
         if (!player) {
-
             return interaction.reply({
-
-                content:
-                    `❌ No players are waiting in **${gamemode.toUpperCase()}** queue.`,
-
+                content: "❌ Queue is empty.",
                 ephemeral: true
-
             });
-
         }
 
+        // Active Test Save
+        db.prepare(`
+            INSERT OR REPLACE INTO active_tests
+            (
+                gamemode,
+                testerId,
+                playerId,
+                startedAt
+            )
+            VALUES (?, ?, ?, ?)
+        `).run(
+            gamemode,
+            interaction.user.id,
+            player.userId,
+            Date.now()
+        );
+
+        const profile = db.prepare(`
+            SELECT *
+            FROM players
+            WHERE userId = ?
+        `).get(player.userId);
+
         const embed = new EmbedBuilder()
-
-            .setColor(config.settings.embedColor)
-
-            .setTitle("🎮 Next Player")
-
+            .setColor("Green")
+            .setTitle("🎯 Next Player")
             .addFields(
-
                 {
                     name: "Player",
-                    value: `<@${player.userId}>`,
+                    value: `<@${player.userId}>`
+                },
+                {
+                    name: "IGN",
+                    value: profile?.ign || "Unknown",
                     inline: true
                 },
-
+                {
+                    name: "Region",
+                    value: profile?.region || "Unknown",
+                    inline: true
+                },
                 {
                     name: "Gamemode",
                     value: gamemode.toUpperCase(),
                     inline: true
-                },
-
-                {
-                    name: "Joined Queue",
-                    value: `<t:${Math.floor(player.joinedAt / 1000)}:R>`
                 }
+            );
 
-            )
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("pass")
+                .setLabel("PASS")
+                .setStyle(ButtonStyle.Success),
 
-            .setFooter({
-
-                text: config.settings.footer
-
-            })
-
-            .setTimestamp();
+            new ButtonBuilder()
+                .setCustomId("fail")
+                .setLabel("FAIL")
+                .setStyle(ButtonStyle.Danger)
+        );
 
         await interaction.reply({
-
-            embeds: [embed]
-
+            embeds: [embed],
+            components: [row]
         });
 
     }
