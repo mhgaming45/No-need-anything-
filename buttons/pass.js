@@ -1,10 +1,9 @@
 const {
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle
+    ButtonStyle,
+    EmbedBuilder
 } = require("discord.js");
-
-const db = require("../database/database");
 
 module.exports = {
 
@@ -12,43 +11,36 @@ module.exports = {
 
     async execute(interaction) {
 
-        const active = db.prepare(`
-            SELECT *
-            FROM active_tests
-            WHERE testerId = ?
-        `).get(interaction.user.id);
+        const parts = interaction.customId.split("_");
 
-        if (!active) {
-            return interaction.reply({
-                content: "❌ No active test.",
-                ephemeral: true
-            });
-        }
+        // pass_uhc_123456789
+        const gamemode = parts[1];
+        const userId = parts[2];
 
-        // Add win
-        db.prepare(`
-            UPDATE players
-            SET wins = wins + 1
-            WHERE userId = ?
-        `).run(active.playerId);
+        const embed = new EmbedBuilder()
+            .setColor("Green")
+            .setTitle("✅ Player Passed")
+            .setDescription(
+                `Player: <@${userId}>\n\n` +
+                `Select a tier for this player.`
+            )
+            .setFooter({
+                text: "Professional Tier Testing"
+            })
+            .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
-
-            new ButtonBuilder()
-    .setCustomId(`set_tier_${gamemode}_${userId}`)
-    .setLabel("SET TIER")
-    .setStyle(ButtonStyle.Primary);
-
-        );
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`set_tier_${gamemode}_${userId}`)
+                    .setLabel("SET TIER")
+                    .setEmoji("🏆")
+                    .setStyle(ButtonStyle.Primary)
+            );
 
         await interaction.update({
 
-            content:
-`✅ <@${active.playerId}> passed the test.
-
-Click **Set Tier** to assign a tier.`,
-
-            embeds: [],
+            embeds: [embed],
             components: [row]
 
         });
