@@ -3,69 +3,99 @@ module.exports = {
 
     async execute(interaction, client) {
 
-        try {
+        // Slash Commands
+        if (interaction.isChatInputCommand()) {
 
-            // Slash Commands
-            if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
 
-                const command = client.commands.get(interaction.commandName);
+            if (!command) return;
 
-                if (!command) return;
+            try {
 
-                await command.execute(interaction, client);
+                await command.execute(interaction);
+
+            } catch (err) {
+
+                console.error(err);
+
+                if (interaction.replied || interaction.deferred) {
+
+                    interaction.followUp({
+                        content: "❌ An error occurred while executing this command.",
+                        ephemeral: true
+                    });
+
+                } else {
+
+                    interaction.reply({
+                        content: "❌ An error occurred while executing this command.",
+                        ephemeral: true
+                    });
+
+                }
+
             }
 
-            // Buttons
-            else if (interaction.isButton()) {
+            return;
+        }
 
-                const button = client.buttons.get(interaction.customId);
+        // Buttons
+        if (interaction.isButton()) {
 
-                if (!button) return;
+            const button = client.buttons.get(interaction.customId);
 
-                await button.execute(interaction, client);
+            if (!button) return;
+
+            try {
+
+                await button.execute(interaction);
+
+            } catch (err) {
+
+                console.error(err);
+
+                if (!interaction.replied) {
+
+                    interaction.reply({
+                        content: "❌ Button error.",
+                        ephemeral: true
+                    });
+
+                }
+
             }
 
-            // Modals
-            else if (interaction.isModalSubmit()) {
+            return;
+        }
 
-                const modal = client.modals.get(interaction.customId);
+        // Modals
+        if (interaction.isModalSubmit()) {
 
-                if (!modal) return;
+            const modal = client.modals.get(interaction.customId);
 
-                await modal.execute(interaction, client);
-            }
+            if (!modal) return;
 
-            // Select Menus (future use)
-            else if (interaction.isStringSelectMenu()) {
+            try {
 
-                const menu = client.buttons.get(interaction.customId);
+                await modal.execute(interaction);
 
-                if (!menu) return;
+            } catch (err) {
 
-                await menu.execute(interaction, client);
-            }
+                console.error(err);
 
-        } catch (err) {
+                if (!interaction.replied) {
 
-            console.error(err);
+                    interaction.reply({
+                        content: "❌ Modal error.",
+                        ephemeral: true
+                    });
 
-            if (interaction.replied || interaction.deferred) {
-
-                await interaction.followUp({
-                    content: "❌ An error occurred while executing this interaction.",
-                    ephemeral: true
-                }).catch(() => {});
-
-            } else {
-
-                await interaction.reply({
-                    content: "❌ An error occurred while executing this interaction.",
-                    ephemeral: true
-                }).catch(() => {});
+                }
 
             }
 
         }
 
     }
+
 };
