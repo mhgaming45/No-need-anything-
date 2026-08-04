@@ -1,51 +1,75 @@
 const {
-    SlashCommandBuilder,
-    PermissionFlagsBits
+    SlashCommandBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("finish")
-        .setDescription("Finish current test")
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        .setDescription("Finish the current test")
+        .setDefaultMemberPermissions("0"),
 
     async execute(interaction, client) {
 
-        // Find active test by this tester
-        const active = db.prepare(`
-            SELECT *
-            FROM active_tests
-            WHERE testerId = ?
-        `).get(interaction.user.id);
+        if (!interaction.member.permissions.has("ManageGuild")) {
 
-        if (!active) {
             return interaction.reply({
-                content: "❌ You don't have any active test.",
+
+                content: "❌ You don't have permission.",
+
                 ephemeral: true
+
             });
+
         }
 
-        // Remove player from queue
-        db.prepare(`
-            DELETE FROM queue
-            WHERE userId = ?
-        `).run(active.playerId);
+        const db = load();
 
-        // Remove active test
-        db.prepare(`
-            DELETE FROM active_tests
-            WHERE gamemode = ?
-        `).run(active.gamemode);
+        const activeModes = Object.keys(db.active_tests || {});
 
-        // Update queue panel
-        await updateQueue(client, active.gamemode);
+        if (activeModes.length === 0) {
 
-        await interaction.reply({
-            content: `✅ Test finished successfully.\nPlayer removed from **${active.gamemode.toUpperCase()}** queue.`
+            return interaction.reply({
+
+                content: "❌ No active test found.",
+
+                ephemeral: true
+
+            });
+
+        }
+
+        const gamemode = activeModes.find(
+            mode => db.active_tests[mode]?.testerId === interaction.user.id
+        );
+
+        if (!gamemode) {
+
+            return interaction.reply({
+
+                content: "❌ You are not testing anyone.",
+
+                ephemeral: true
+
+            });
+
+        }
+
+        delete db.active_tests[gamemode];
+
+        save(db);
+
+        await updateQueue(client, gamemode);
+
+        return interaction.reply({
+
+            content: `✅ ${gamemode.toUpperCase()} test has been finished.`,
+
+            ephemeral: true
+
         });
 
     }
