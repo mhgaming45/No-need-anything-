@@ -1,10 +1,8 @@
 const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    EmbedBuilder
+    SlashCommandBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const config = require("../config");
 
 module.exports = {
@@ -15,13 +13,13 @@ module.exports = {
         .addUserOption(option =>
             option
                 .setName("player")
-                .setDescription("Player")
+                .setDescription("Select player")
                 .setRequired(true)
         )
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Gamemode")
+                .setDescription("Select gamemode")
                 .setRequired(true)
                 .addChoices(
                     { name: "UHC", value: "uhc" },
@@ -36,7 +34,7 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName("tier")
-                .setDescription("Tier")
+                .setDescription("Select tier")
                 .setRequired(true)
                 .addChoices(
                     { name: "HT5", value: "HT5" },
@@ -50,79 +48,77 @@ module.exports = {
                     { name: "LT4", value: "LT4" },
                     { name: "LT5", value: "LT5" }
                 )
-        )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction) {
 
-        const member = interaction.options.getMember("player");
+        if (!interaction.member.permissions.has("ManageGuild")) {
+
+            return interaction.reply({
+                content: "❌ You don't have permission.",
+                ephemeral: true
+            });
+
+        }
+
+        const user = interaction.options.getUser("player");
         const gamemode = interaction.options.getString("gamemode");
         const tier = interaction.options.getString("tier");
 
-        const old = db.prepare(`
-        SELECT tier
-        FROM tiers
-        WHERE userId = ?
-        AND gamemode = ?
-        `).get(member.id, gamemode);
+        const db = load();
 
-        // Save Tier
-        db.prepare(`
-        INSERT OR REPLACE INTO tiers
-        (userId,gamemode,tier,updatedAt)
-        VALUES(?,?,?,?)
-        `).run(
-            member.id,
-            gamemode,
-            tier,
-            new Date().toISOString()
-        );
+        if (!db.players[user.id]) {
 
-        // Remove old tier roles
-        for (const roleId of Object.values(config.tierRoles)) {
-            if (member.roles.cache.has(roleId)) {
-                await member.roles.remove(roleId).catch(() => {});
-            }
+            return interaction.reply({
+                content: "❌ Player not registered.",
+                ephemeral: true
+            });
+
         }
 
-        // Add new tier role
-        const newRole = config.tierRoles[tier];
+        if (!db.tiers) db.tiers = {};
 
-        if (newRole) {
-            await member.roles.add(newRole).catch(() => {});
+        if (!db.tiers[user.id]) {
+            db.tiers[user.id] = {};
         }
 
-        const embed = new EmbedBuilder()
-            .setColor("Green")
-            .setTitle("✅ Tier Updated")
-            .addFields(
-                {
-                    name: "Player",
-                    value: `${member}`,
-                    inline: true
-                },
-                {
-                    name: "Gamemode",
-                    value: gamemode.toUpperCase(),
-                    inline: true
-                },
-                {
-                    name: "Previous Tier",
-                    value: old?.tier || "Unranked",
-                    inline: true
-                },
-                {
-                    name: "New Tier",
-                    value: tier,
-                    inline: true
+        db.tiers[user.id][gamemode] = tier;
+
+        save(db);
+
+        const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+        if (member) {
+
+            // Remove old tier roles
+            for (const roleId of Object.values(config.tierRoles)) {
+
+                if (member.roles.cache.has(roleId)) {
+
+                    await member.roles.remove(roleId).catch(() => {});
+
                 }
-            )
-            .setTimestamp();
+
+            }
+
+            // Give new role
+            const roleId = config.tierRoles[tier];
+
+            if (roleId) {
+
+                await member.roles.add(roleId).catch(() => {});
+
+            }
+
+        }
 
         await interaction.reply({
-            embeds: [embed]
+
+            content:
+`✅ Successfully set **${user.username}** to **${tier}** in **${gamemode.toUpperCase()}**.`,
+
+            ephemeral: true
+
         });
 
     }
