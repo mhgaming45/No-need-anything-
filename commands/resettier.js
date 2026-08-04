@@ -1,27 +1,25 @@
 const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    EmbedBuilder
+    SlashCommandBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const config = require("../config");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("resettier")
-        .setDescription("Reset player's tier")
+        .setDescription("Reset a player's tier")
         .addUserOption(option =>
             option
                 .setName("player")
-                .setDescription("Player")
+                .setDescription("Select Player")
                 .setRequired(true)
         )
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Gamemode")
+                .setDescription("Select Gamemode")
                 .setRequired(true)
                 .addChoices(
                     { name: "UHC", value: "uhc" },
@@ -32,81 +30,66 @@ module.exports = {
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        ),
 
     async execute(interaction) {
 
-        const member = interaction.options.getMember("player");
-        const gamemode = interaction.options.getString("gamemode");
-
-        const data = db.prepare(`
-            SELECT *
-            FROM tiers
-            WHERE userId = ?
-            AND gamemode = ?
-        `).get(member.id, gamemode);
-
-        if (!data) {
+        if (!interaction.member.permissions.has("ManageGuild")) {
 
             return interaction.reply({
-                content: "❌ This player has no tier in this gamemode.",
+                content: "❌ You don't have permission.",
                 ephemeral: true
             });
 
         }
 
-        // Remove Database Tier
-        db.prepare(`
-            DELETE FROM tiers
-            WHERE userId = ?
-            AND gamemode = ?
-        `).run(member.id, gamemode);
+        const user = interaction.options.getUser("player");
+        const gamemode = interaction.options.getString("gamemode");
 
-        // Remove Tier Roles
-        for (const roleId of Object.values(config.tierRoles)) {
+        const db = load();
 
-            if (member.roles.cache.has(roleId)) {
+        if (!db.players[user.id]) {
 
-                await member.roles.remove(roleId).catch(() => {});
+            return interaction.reply({
+                content: "❌ Player not registered.",
+                ephemeral: true
+            });
+
+        }
+
+        if (!db.tiers) db.tiers = {};
+
+        if (!db.tiers[user.id]) {
+            db.tiers[user.id] = {};
+        }
+
+        db.tiers[user.id][gamemode] = "Unranked";
+
+        save(db);
+
+        // Remove Discord tier roles
+        const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+        if (member) {
+
+            for (const roleId of Object.values(config.tierRoles)) {
+
+                if (member.roles.cache.has(roleId)) {
+
+                    await member.roles.remove(roleId).catch(() => {});
+
+                }
 
             }
 
         }
 
-        const embed = new EmbedBuilder()
-
-            .setColor("Red")
-
-            .setTitle("🗑️ Tier Reset")
-
-            .addFields(
-
-                {
-                    name: "Player",
-                    value: `${member}`,
-                    inline: true
-                },
-
-                {
-                    name: "Gamemode",
-                    value: gamemode.toUpperCase(),
-                    inline: true
-                },
-
-                {
-                    name: "Removed Tier",
-                    value: data.tier,
-                    inline: true
-                }
-
-            )
-
-            .setTimestamp();
-
         await interaction.reply({
 
-            embeds: [embed]
+            content:
+`✅ Successfully reset **${user.username}**'s **${gamemode.toUpperCase()}** tier.`,
+
+            ephemeral: true
 
         });
 
