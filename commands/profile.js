@@ -3,8 +3,7 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
-const config = require("../config");
+const { load } = require("../database/database");
 
 module.exports = {
 
@@ -24,11 +23,9 @@ module.exports = {
             interaction.options.getUser("player") ||
             interaction.user;
 
-        const player = db.prepare(`
-            SELECT *
-            FROM players
-            WHERE userId = ?
-        `).get(user.id);
+        const db = load();
+
+        const player = db.players[user.id];
 
         if (!player) {
 
@@ -42,28 +39,30 @@ module.exports = {
 
         }
 
-        const tiers = db.prepare(`
-            SELECT gamemode, tier
-            FROM tiers
-            WHERE userId = ?
-        `).all(user.id);
-
         let tierText = "";
 
-        for (const mode of config.gamemodes) {
+        const gamemodes = [
+            "uhc",
+            "nethpot",
+            "vanilla",
+            "smp",
+            "sword",
+            "mace",
+            "axe"
+        ];
 
-            const data = tiers.find(
-                t => t.gamemode === mode
-            );
+        for (const mode of gamemodes) {
 
-            tierText +=
-                `**${mode.toUpperCase()}** : ${data ? data.tier : "Unranked"}\n`;
+            const tier =
+                db.tiers?.[user.id]?.[mode] || "Unranked";
+
+            tierText += `**${mode.toUpperCase()}** : ${tier}\n`;
 
         }
 
         const embed = new EmbedBuilder()
 
-            .setColor(config.settings.embedColor)
+            .setColor("#5865F2")
 
             .setAuthor({
 
@@ -78,78 +77,51 @@ module.exports = {
             .addFields(
 
                 {
-
-                    name: "MinecraftUsername",
-
+                    name: "👤 Minecraft Username",
                     value: player.ign,
-
                     inline: true
-
                 },
 
                 {
-
-                    name: "Region",
-
+                    name: "🌍 Region",
                     value: player.region,
-
                     inline: true
-
                 },
 
                 {
-
-                    name: "Account",
-
+                    name: "💎 Account",
                     value: player.accountType,
-
                     inline: true
-
                 },
 
                 {
-
-                    name: "Wins",
-
-                    value: `${player.wins}`,
-
+                    name: "🏆 Wins",
+                    value: `${player.wins || 0}`,
                     inline: true
-
                 },
 
                 {
-
-                    name: "Losses",
-
-                    value: `${player.losses}`,
-
+                    name: "❌ Losses",
+                    value: `${player.losses || 0}`,
                     inline: true
-
                 },
 
                 {
-
-                    name: "ELO",
-
-                    value: `${player.elo}`,
-
+                    name: "⭐ ELO",
+                    value: `${player.elo || 1000}`,
                     inline: true
-
                 },
 
                 {
-
-                    name: "Gamemode Tiers",
-
+                    name: "🎮 Gamemode Tiers",
                     value: tierText
-
                 }
 
             )
 
             .setFooter({
 
-                text: config.settings.footer
+                text: "Developed by MHGAMING"
 
             })
 
