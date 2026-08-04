@@ -1,36 +1,62 @@
 const fs = require("fs");
 const path = require("path");
 
-const dbPath = path.join(__dirname, "..", "database.json");
+const databasePath = path.join(__dirname, "database.json");
 
-// Agar database.json nahi hai to automatically bana dega
-if (!fs.existsSync(dbPath)) {
+// Create database if it doesn't exist
+if (!fs.existsSync(databasePath)) {
+
+    const defaultData = {
+
+        players: {},
+
+        tiers: {},
+
+        queue: [],
+
+        active_tests: {},
+
+        queue_messages: {},
+
+        history: [],
+
+        matches: [],
+
+        testerStats: {},
+
+        settings: {}
+
+    };
+
     fs.writeFileSync(
-        dbPath,
-        JSON.stringify({
-            players: {},
-            tiers: {},
-            queue: [],
-            active_tests: {},
-            queue_messages: {},
-            tester_stats: {},
-            history: [],
-            settings: {}
-        }, null, 4)
+        databasePath,
+        JSON.stringify(defaultData, null, 4)
     );
+
 }
 
 // Load Database
 function load() {
-    return JSON.parse(fs.readFileSync(dbPath, "utf8"));
+
+    return JSON.parse(
+        fs.readFileSync(databasePath, "utf8")
+    );
+
 }
 
 // Save Database
 function save(data) {
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 4));
+
+    fs.writeFileSync(
+        databasePath,
+        JSON.stringify(data, null, 4)
+    );
+
 }
 
 module.exports = {
+
     load,
     save
+
 };
