@@ -6,8 +6,8 @@ module.exports = {
 
     settings: {
 
-        embedColor: "#5865F2",
-        footer: "Professional Tier Testing Bot"
+        embedColor: "#FFD700",
+        footer: "⚡ Developed by MHGAMING"
 
     },
 
@@ -31,13 +31,13 @@ module.exports = {
     // CHANNELS
     // ==========================
 
-    queueChannels: {
+    channels: {
 
         register: "1528379939450126418",
 
         logs: "1528380129829453945",
 
-        result: "1529530008924586116",
+        results: "1529530008924586116",
 
         uhc: "1530230068339540081",
 
@@ -59,7 +59,7 @@ module.exports = {
     // TIER ROLES
     // ==========================
 
-    tierRoles: {
+    roles: {
 
         LT5: "1532653229723091105",
         LT4: "1532653270227747006",
