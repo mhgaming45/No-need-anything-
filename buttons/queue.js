@@ -12,8 +12,12 @@ module.exports = {
 
         const db = load();
 
-        // Registered Check
-        if (!db.players[interaction.user.id]) {
+        // Check Register
+        const player = db.players.find(
+            p => p.userId === interaction.user.id
+        );
+
+        if (!player) {
 
             return interaction.reply({
 
@@ -25,7 +29,7 @@ module.exports = {
 
         }
 
-        // Already In Queue
+        // Already in Queue
         const already = db.queue.find(
             q => q.userId === interaction.user.id
         );
@@ -46,49 +50,50 @@ module.exports = {
         db.queue.push({
 
             userId: interaction.user.id,
-
             username: interaction.user.username,
-
             gamemode,
-
             joinedAt: Date.now()
 
         });
 
         save(db);
 
-        // Give Channel Access
-        const channel = interaction.guild.channels.cache.get(
-            config.queueChannels[gamemode]
-        );
+        // Give Access
+        const channelId = config.queueChannels[gamemode];
 
-        if (channel) {
+        if (channelId) {
 
-            await channel.permissionOverwrites.edit(
+            const channel = interaction.guild.channels.cache.get(channelId);
 
-                interaction.user.id,
+            if (channel) {
 
-                {
+                await channel.permissionOverwrites.edit(
 
-                    ViewChannel: true,
-                    SendMessages: true,
-                    ReadMessageHistory: true
+                    interaction.user.id,
 
-                }
+                    {
 
-            ).catch(() => {});
+                        ViewChannel: true,
+                        SendMessages: true,
+                        ReadMessageHistory: true
+
+                    }
+
+                ).catch(() => {});
+
+            }
 
         }
 
-        // Update Queue
+        // Update Queue Panel
         await updateQueue(client, gamemode);
 
-        await interaction.reply({
+        return interaction.reply({
 
             content:
 `✅ Successfully joined **${gamemode.toUpperCase()}** Queue.
 
-➡️ Please go to <#${config.queueChannels[gamemode]}>.`,
+➡️ Please go to <#${channelId}>.`,
 
             ephemeral: true
 
