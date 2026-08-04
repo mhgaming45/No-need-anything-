@@ -2,7 +2,7 @@ const { load, save } = require("../database/database");
 
 module.exports = {
 
-    id: "register_modal",
+    id: "register",
 
     async execute(interaction) {
 
@@ -11,6 +11,9 @@ module.exports = {
         const account = interaction.fields.getTextInputValue("account");
 
         const db = load();
+
+        if (!db.players)
+            db.players = {};
 
         db.players[interaction.user.id] = {
 
@@ -23,11 +26,11 @@ module.exports = {
             region,
             accountType: account,
 
-            elo: 1000,
             wins: 0,
             losses: 0,
+            tier: "Unranked",
 
-            registeredAt: new Date().toISOString()
+            registeredAt: Date.now()
 
         };
 
