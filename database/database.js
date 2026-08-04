@@ -54,7 +54,7 @@ function save(data) {
 
 }
 
-module.exports = {
+export default = {
 
     load,
     save
