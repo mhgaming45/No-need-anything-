@@ -13,28 +13,28 @@ module.exports = {
 
         const modal = new ModalBuilder()
             .setCustomId("register_modal")
-            .setTitle("Tier Testing Register");
+            .setTitle("Tier Testing Registration");
 
         const ign = new TextInputBuilder()
             .setCustomId("ign")
             .setLabel("Minecraft Username")
-            .setPlaceholder("Enter your Minecraft username")
             .setStyle(TextInputStyle.Short)
+            .setPlaceholder("Enter your IGN")
             .setRequired(true)
             .setMaxLength(16);
 
         const region = new TextInputBuilder()
             .setCustomId("region")
             .setLabel("Region")
-            .setPlaceholder("AS, EU, NA, ME...")
             .setStyle(TextInputStyle.Short)
+            .setPlaceholder("AS / EU / NA / ME")
             .setRequired(true);
 
         const account = new TextInputBuilder()
             .setCustomId("account")
             .setLabel("Account Type")
-            .setPlaceholder("Premium / Cracked")
             .setStyle(TextInputStyle.Short)
+            .setPlaceholder("Premium / Cracked")
             .setRequired(true);
 
         modal.addComponents(
