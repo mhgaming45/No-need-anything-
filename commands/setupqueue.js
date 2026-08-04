@@ -1,90 +1,119 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
     EmbedBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
+const updateQueue = require("../utils/updateQueue");
 const config = require("../config");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
-        .setName("setup-queue")
-        .setDescription("Setup all queue panels")
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.Administrator
+        .setName("setupqueue")
+        .setDescription("Setup Queue Panel")
+        .addStringOption(option =>
+            option
+                .setName("gamemode")
+                .setDescription("Select Gamemode")
+                .setRequired(true)
+                .addChoices(
+                    { name: "UHC", value: "uhc" },
+                    { name: "NethPot", value: "nethpot" },
+                    { name: "Vanilla", value: "vanilla" },
+                    { name: "SMP", value: "smp" },
+                    { name: "Sword", value: "sword" },
+                    { name: "Mace", value: "mace" },
+                    { name: "Axe", value: "axe" }
+                )
         ),
 
-    async execute(interaction) {
+    async execute(interaction, client) {
 
-        await interaction.deferReply({
-            ephemeral: true
-        });
-
-        for (const gamemode of config.gamemodes) {
-
-            const channelId = config.queueChannels[gamemode];
-
-            if (!channelId) continue;
-
-            const channel = interaction.guild.channels.cache.get(channelId);
-
-            if (!channel) continue;
-
-            const embed = new EmbedBuilder()
-                .setColor(config.settings.embedColor)
-                .setTitle(`${config.emojis[gamemode]} ${gamemode.toUpperCase()} Queue`)
-                .setDescription("```No players in queue.```")
-                .addFields(
-                    {
-                        name: "🟢 Status",
-                        value: "Open",
-                        inline: true
-                    },
-                    {
-                        name: "👨‍⚖️ Current Tester",
-                        value: "None",
-                        inline: true
-                    },
-                    {
-                        name: "👤 Current Player",
-                        value: "None",
-                        inline: true
-                    },
-                    {
-                        name: "Players",
-                        value: "0",
-                        inline: true
-                    }
-                )
-                .setFooter({
-                    text: config.settings.footer
-                })
-                .setTimestamp();
-
-            const msg = await channel.send({
-                embeds: [embed]
+        if (!interaction.member.permissions.has("ManageGuild")) {
+            return interaction.reply({
+                content: "❌ You don't have permission.",
+                ephemeral: true
             });
-
-            db.prepare(`
-                INSERT OR REPLACE INTO queue_messages
-                (
-                    gamemode,
-                    channelId,
-                    messageId
-                )
-                VALUES (?, ?, ?)
-            `).run(
-                gamemode,
-                channel.id,
-                msg.id
-            );
-
         }
 
-        await interaction.editReply({
-            content: "✅ All queue panels have been created successfully."
+        const gamemode = interaction.options.getString("gamemode");
+
+        const channelId = config.queueChannels[gamemode];
+
+        if (!channelId) {
+            return interaction.reply({
+                content: "❌ Queue channel not found in config.",
+                ephemeral: true
+            });
+        }
+
+        const channel = interaction.guild.channels.cache.get(channelId);
+
+        if (!channel) {
+            return interaction.reply({
+                content: "❌ Queue channel not found.",
+                ephemeral: true
+            });
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor(config.settings.embedColor)
+            .setTitle(`${config.emojis[gamemode]} ${gamemode.toUpperCase()} Queue`)
+            .setDescription("```No players in queue.```")
+            .addFields(
+                {
+                    name: "🟢 Status",
+                    value: "Open",
+                    inline: true
+                },
+                {
+                    name: "👨‍⚖️ Current Tester",
+                    value: "None",
+                    inline: true
+                },
+                {
+                    name: "👤 Current Player",
+                    value: "None",
+                    inline: true
+                },
+                {
+                    name: "Players",
+                    value: "0",
+                    inline: true
+                }
+            )
+            .setFooter({
+                text: "Developed by MHGAMING"
+            })
+            .setTimestamp();
+
+        const msg = await channel.send({
+            embeds: [embed]
+        });
+
+        const db = load();
+
+        if (!db.queue_messages)
+            db.queue_messages = {};
+
+        db.queue_messages[gamemode] = {
+
+            channelId: channel.id,
+            messageId: msg.id
+
+        };
+
+        save(db);
+
+        await updateQueue(client, gamemode);
+
+        await interaction.reply({
+
+            content: `✅ ${gamemode.toUpperCase()} Queue Panel Created.`,
+
+            ephemeral: true
+
         });
 
     }
