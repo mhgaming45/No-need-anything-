@@ -3,89 +3,125 @@ const {
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
-    ButtonStyle,
-    PermissionFlagsBits
+    ButtonStyle
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
+const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("start")
-        .setDescription("Start current test")
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+        .setDescription("Start testing the next player")
+        .addStringOption(option =>
+            option
+                .setName("gamemode")
+                .setDescription("Select gamemode")
+                .setRequired(true)
+                .addChoices(
+                    { name: "UHC", value: "uhc" },
+                    { name: "NethPot", value: "nethpot" },
+                    { name: "Vanilla", value: "vanilla" },
+                    { name: "SMP", value: "smp" },
+                    { name: "Sword", value: "sword" },
+                    { name: "Mace", value: "mace" },
+                    { name: "Axe", value: "axe" }
+                )
+        ),
 
-    async execute(interaction) {
+    async execute(interaction, client) {
 
-        const active = db.prepare(`
-            SELECT *
-            FROM active_tests
-            WHERE testerId = ?
-        `).get(interaction.user.id);
-
-        if (!active) {
+        if (!interaction.member.permissions.has("ManageGuild")) {
             return interaction.reply({
-                content: "❌ No active test found. Use /next first.",
+                content: "❌ You don't have permission.",
                 ephemeral: true
             });
         }
 
-        const player = db.prepare(`
-            SELECT *
-            FROM players
-            WHERE userId = ?
-        `).get(active.playerId);
+        const gamemode = interaction.options.getString("gamemode");
 
-        if (!player) {
+        const db = load();
+
+        if (!db.active_tests)
+            db.active_tests = {};
+
+        if (db.active_tests[gamemode]) {
             return interaction.reply({
-                content: "❌ Player not found.",
+                content: "❌ A test is already running for this gamemode.",
                 ephemeral: true
             });
         }
+
+        const queue = db.queue
+            .filter(q => q.gamemode === gamemode)
+            .sort((a, b) => a.joinedAt - b.joinedAt);
+
+        if (queue.length === 0) {
+            return interaction.reply({
+                content: "❌ Queue is empty.",
+                ephemeral: true
+            });
+        }
+
+        const player = queue[0];
+        const data = db.players[player.userId];
+
+        db.active_tests[gamemode] = {
+            testerId: interaction.user.id,
+            playerId: player.userId,
+            startedAt: Date.now()
+        };
+
+        save(db);
+
+        await updateQueue(client, gamemode);
 
         const embed = new EmbedBuilder()
-            .setColor("Blue")
-            .setTitle("🎯 Tier Test Started")
+            .setColor("#57F287")
+            .setTitle(`🧪 ${gamemode.toUpperCase()} Test Started`)
             .addFields(
                 {
-                    name: "Player",
-                    value: `<@${active.playerId}>`,
+                    name: "👤 Player",
+                    value: `<@${player.userId}>`,
                     inline: true
                 },
                 {
-                    name: "IGN",
-                    value: player.ign,
+                    name: "🎮 IGN",
+                    value: data?.ign || "Unknown",
                     inline: true
                 },
                 {
-                    name: "Region",
-                    value: player.region,
-                    inline: true
-                },
-                {
-                    name: "Gamemode",
-                    value: active.gamemode.toUpperCase(),
+                    name: "🌍 Region",
+                    value: data?.region || "Unknown",
                     inline: true
                 }
             )
+            .setFooter({
+                text: "Developed by MHGAMING"
+            })
             .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
+        const buttons = new ActionRowBuilder().addComponents(
+
             new ButtonBuilder()
-                .setCustomId("pass")
+                .setCustomId(`pass_${gamemode}_${player.userId}`)
                 .setLabel("PASS")
                 .setStyle(ButtonStyle.Success),
 
             new ButtonBuilder()
-                .setCustomId("fail")
+                .setCustomId(`fail_${gamemode}_${player.userId}`)
                 .setLabel("FAIL")
                 .setStyle(ButtonStyle.Danger)
+
         );
 
         await interaction.reply({
+
             embeds: [embed],
-            components: [row]
+
+            components: [buttons]
+
         });
 
     }
