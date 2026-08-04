@@ -3,35 +3,33 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load } = require("../database/database");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("history")
-        .setDescription("View player tier history")
+        .setDescription("View a player's tier history")
         .addUserOption(option =>
             option
-                .setName("player")
+                .setName("user")
                 .setDescription("Player")
-                .setRequired(false)
+                .setRequired(true)
         ),
 
     async execute(interaction) {
 
-        const user =
-            interaction.options.getUser("player") ||
-            interaction.user;
+        const user = interaction.options.getUser("user");
 
-        const history = db.prepare(`
-        SELECT *
-        FROM history
-        WHERE userId = ?
-        ORDER BY id DESC
-        LIMIT 10
-        `).all(user.id);
+        const db = load();
 
-        if (!history.length) {
+        if (!db.history) db.history = [];
+
+        const history = db.history.filter(
+            h => h.userId === user.id
+        );
+
+        if (history.length === 0) {
 
             return interaction.reply({
 
@@ -47,27 +45,31 @@ module.exports = {
 
             .setColor("#5865F2")
 
-            .setTitle(`📜 ${user.username}'s Tier History`)
+            .setTitle(`${user.username}'s Tier History`)
 
             .setDescription(
 
-                history.map(h =>
+                history
+                    .reverse()
+                    .slice(0, 15)
+                    .map((h, i) =>
 
-`🎮 **${h.gamemode.toUpperCase()}**
-📉 ${h.oldTier}
-➡
-📈 ${h.newTier}
+`${i + 1}. **${h.gamemode.toUpperCase()}**
+Old Tier : ${h.oldTier || "None"}
+New Tier : ${h.newTier}
+Tester : <@${h.testerId}>
+<t:${Math.floor(new Date(h.createdAt).getTime() / 1000)}:R>`
 
-👨‍⚖️ <@${h.testerId}>
-
-<t:${Math.floor(new Date(h.createdAt).getTime()/1000)}:R>
-`
-
-                ).join("\n━━━━━━━━━━━━━━\n")
+                    )
+                    .join("\n\n")
 
             )
 
-            .setThumbnail(user.displayAvatarURL())
+            .setFooter({
+
+                text: "Developed By MHGAMING"
+
+            })
 
             .setTimestamp();
 
