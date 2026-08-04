@@ -59,7 +59,7 @@ module.exports = {
                 new ButtonBuilder()
                     .setCustomId("queue_uhc")
                     .setLabel("UHC")
-                    .setEmoji("⚔️")
+                    .setEmoji("<:uhc:1500781212590018580>")
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
