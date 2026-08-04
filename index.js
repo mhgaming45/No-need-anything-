@@ -1,14 +1,18 @@
-require("dotenv").config();
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const fs = require("fs");
-const path = require("path");
-
-const {
+import {
     Client,
     Collection,
     GatewayIntentBits,
     Partials
-} = require("discord.js");
+} from "discord.js";
+
+// Required for __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const client = new Client({
     intents: [
@@ -31,7 +35,8 @@ client.modals = new Collection();
 // ======================
 // JSON DATABASE
 // ======================
-client.db = require("./database/database");
+import database from "./database/database.js";
+client.db = database;
 
 // ======================
 // LOAD COMMANDS
@@ -42,9 +47,10 @@ if (fs.existsSync(commandsPath)) {
     const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
 
     for (const file of commandFiles) {
-        const command = require(path.join(commandsPath, file));
-        if (command.data) {
-            client.commands.set(command.data.name, command);
+        const filePath = path.join(commandsPath, file);
+        const command = await import(`file://${filePath}`);
+        if (command.default && command.default.data) {
+            client.commands.set(command.default.data.name, command.default);
         }
     }
 }
@@ -58,8 +64,9 @@ if (fs.existsSync(buttonsPath)) {
     const buttonFiles = fs.readdirSync(buttonsPath).filter(f => f.endsWith(".js"));
 
     for (const file of buttonFiles) {
-        const button = require(path.join(buttonsPath, file));
-        client.buttons.set(button.id, button);
+        const filePath = path.join(buttonsPath, file);
+        const button = await import(`file://${filePath}`);
+        client.buttons.set(button.default.id, button.default);
     }
 }
 
@@ -72,8 +79,9 @@ if (fs.existsSync(modalsPath)) {
     const modalFiles = fs.readdirSync(modalsPath).filter(f => f.endsWith(".js"));
 
     for (const file of modalFiles) {
-        const modal = require(path.join(modalsPath, file));
-        client.modals.set(modal.id, modal);
+        const filePath = path.join(modalsPath, file);
+        const modal = await import(`file://${filePath}`);
+        client.modals.set(modal.default.id, modal.default);
     }
 }
 
@@ -86,7 +94,9 @@ if (fs.existsSync(eventsPath)) {
     const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith(".js"));
 
     for (const file of eventFiles) {
-        const event = require(path.join(eventsPath, file));
+        const filePath = path.join(eventsPath, file);
+        const eventModule = await import(`file://${filePath}`);
+        const event = eventModule.default;
 
         if (event.once) {
             client.once(event.name, (...args) => event.execute(...args, client));
