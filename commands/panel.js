@@ -6,68 +6,132 @@ const {
     ButtonStyle
 } = require("discord.js");
 
+const config = require("../config");
+
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("panel")
-        .setDescription("Send the Tier Testing Panel"),
+        .setDescription("Send the registration panel")
+        .setDefaultMemberPermissions("0"),
 
     async execute(interaction) {
 
+        if (!interaction.member.permissions.has("ManageGuild")) {
+            return interaction.reply({
+                content: "❌ You don't have permission.",
+                ephemeral: true
+            });
+        }
+
         const embed = new EmbedBuilder()
-            .setColor("#5865F2")
-            .setTitle("📝 Tier Testing Registration")
+            .setColor(config.settings.embedColor)
+            .setTitle("🏆 Professional Tier Testing")
             .setDescription(
-`Welcome to the Tier Testing System!
+`Welcome to the Tier Testing System.
 
-**How to Register**
-• Click **Register** and fill in your information.
+**How to Join**
 
-**How to Join Queue**
-• Click the **Queue** button.
-• Select your preferred gamemode.
-• You will automatically join that queue.
+1️⃣ Click **Register**
+2️⃣ Fill the registration form
+3️⃣ Select your Gamemode
+4️⃣ Wait for your turn
+5️⃣ A tester will test you
 
-━━━━━━━━━━━━━━━━━━
-
-🎮 Available Gamemodes
-
-<:neth:1508477782902964404> **NethPot**
-<:crystal:1508477864377581578> **Vanilla**
-<:smp:1508478184348188903> **SMP**
-<:diamond_sword:1508478005876359208> **Sword**
-<:uhc:1500781212590018580> **UHC**
-<:mace:1508478497209978981> **Mace**
-<:axe:1508478292024627463> **Axe**
-
-━━━━━━━━━━━━━━━━━━
-
-Press a button below to continue.`
+━━━━━━━━━━━━━━━━━━`
             )
             .setFooter({
-                text: "Professional Tier Testing Bot"
+                text: "Developed by MHGAMING"
             })
             .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
+        const registerRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId("register")
+                    .setLabel("Register")
+                    .setEmoji("📝")
+                    .setStyle(ButtonStyle.Primary)
+            );
 
-            new ButtonBuilder()
-                .setCustomId("register")
-                .setLabel("Register")
-                .setEmoji("📝")
-                .setStyle(ButtonStyle.Success),
+        const row1 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId("queue_uhc")
+                    .setLabel("UHC")
+                    .setEmoji("⚔️")
+                    .setStyle(ButtonStyle.Secondary),
 
-            new ButtonBuilder()
-                .setCustomId("queue")
-                .setLabel("Queue")
-                .setEmoji("🎮")
-                .setStyle(ButtonStyle.Primary)
+                new ButtonBuilder()
+                    .setCustomId("queue_nethpot")
+                    .setLabel("NethPot")
+                    .setEmoji("🔥")
+                    .setStyle(ButtonStyle.Secondary),
 
-        );
+                new ButtonBuilder()
+                    .setCustomId("queue_vanilla")
+                    .setLabel("Vanilla")
+                    .setEmoji("💎")
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        const row2 = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId("queue_smp")
+                    .setLabel("SMP")
+                    .setEmoji("🌍")
+                    .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                    .setCustomId("queue_sword")
+                    .setLabel("Sword")
+                    .setEmoji("🗡️")
+                    .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                    .setCustomId("queue_mace")
+                    .setLabel("Mace")
+                    .setEmoji("🔨")
+                    .setStyle(ButtonStyle.Secondary),
+
+                new ButtonBuilder()
+                    .setCustomId("queue_axe")
+                    .setLabel("Axe")
+                    .setEmoji("🪓")
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        const leaveRow = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId("leave_queue")
+                    .setLabel("Leave Queue")
+                    .setEmoji("❌")
+                    .setStyle(ButtonStyle.Danger)
+            );
+
+        await interaction.channel.send({
+
+            embeds: [embed],
+
+            components: [
+
+                registerRow,
+                row1,
+                row2,
+                leaveRow
+
+            ]
+
+        });
 
         await interaction.reply({
-            embeds: [embed],
-            components: [row]
+
+            content: "✅ Panel sent successfully.",
+
+            ephemeral: true
+
         });
 
     }
