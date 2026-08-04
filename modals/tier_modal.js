@@ -1,82 +1,72 @@
-const db = require("../database/database");
-const config = require("../config");
+const { EmbedBuilder } = require("discord.js");
 
-module.exports = {
+// Result Channel
+const resultChannel = interaction.guild.channels.cache.get(config.channels.results);
 
-    id: "tier_modal",
+if (resultChannel) {
 
-    async execute(interaction) {
+    const player = db.players[userId];
 
-        const parts = interaction.customId.split("_");
+    const embed = new EmbedBuilder()
 
-        const gamemode = parts[2];
-        const userId = parts[3];
+        .setColor("#FFD700")
 
-        const tier = interaction.fields
-            .getTextInputValue("tier")
-            .toUpperCase();
+        .setTitle(`🏆 ${player.ign}'s Tier Update`)
 
-        const valid = [
-            "HT5","HT4","HT3","HT2","HT1",
-            "LT1","LT2","LT3","LT4","LT5"
-        ];
+        .setThumbnail(
+            `https://mc-heads.net/avatar/${player.ign}/256`
+        )
 
-        if (!valid.includes(tier)) {
+        .addFields(
 
-            return interaction.reply({
-                content: "❌ Invalid Tier.",
-                ephemeral: true
-            });
+            {
+                name: "👨‍⚖️ Tester",
+                value: `<@${interaction.user.id}>`,
+                inline: false
+            },
 
-        }
+            {
+                name: "🎮 Minecraft Username",
+                value: `\`${player.ign}\``,
+                inline: true
+            },
 
-        db.prepare(`
-            INSERT OR REPLACE INTO tiers
-            (userId,gamemode,tier,updatedAt)
-            VALUES(?,?,?,?)
-        `).run(
-            userId,
-            gamemode,
-            tier,
-            new Date().toISOString()
-        );
+            {
+                name: "⚔️ Game Mode",
+                value: `\`${player.gamemode || "Unknown"}\``,
+                inline: true
+            },
 
-        const member = await interaction.guild.members.fetch(userId);
+            {
+                name: "📊 Previous Rank",
+                value: `\`${player.previousTier || "Unranked"}\``,
+                inline: true
+            },
 
-        for (const roleId of Object.values(config.tierRoles)) {
-
-            if (member.roles.cache.has(roleId)) {
-
-                await member.roles.remove(roleId).catch(() => {});
-
+            {
+                name: "🏆 Rank Earned",
+                value: `\`${tier}\``,
+                inline: true
             }
 
-        }
+        )
 
-        await member.roles.add(config.tierRoles[tier]).catch(() => {});
+        .setFooter({
+            text: "⚡ Developed by MHGAMING"
+        })
 
-        db.prepare(`
-            UPDATE players
-            SET wins = wins + 1
-            WHERE userId = ?
-        `).run(userId);
+        .setTimestamp();
 
-        db.prepare(`
-            DELETE FROM active_tests
-            WHERE gamemode = ?
-        `).run(gamemode);
+    await resultChannel.send({
 
-        db.prepare(`
-            DELETE FROM queue
-            WHERE userId = ?
-        `).run(userId);
+        content: `<@${userId}>`,
 
-        await interaction.reply({
+        embeds: [embed]
 
-            content: `✅ <@${userId}> has been set to **${tier}**.`
+    });
 
-        });
+    // Save previous rank
+    player.previousTier = tier;
+    save(db);
 
-    }
-
-};
+}
