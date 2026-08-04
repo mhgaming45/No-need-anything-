@@ -1,7 +1,4 @@
-const {
-    EmbedBuilder
-} = require("discord.js");
-
+const { EmbedBuilder } = require("discord.js");
 const { load } = require("../database/database");
 const config = require("../config");
 
@@ -9,106 +6,61 @@ module.exports = async (client, gamemode) => {
 
     const db = load();
 
-    // Queue Panel Data
-    const panel = db.queue_messages[gamemode];
+    if (!db.queues) db.queues = {};
 
-    if (!panel) return;
+    if (!db.queues[gamemode])
+        db.queues[gamemode] = [];
 
-    const channel = await client.channels
-        .fetch(panel.channelId)
-        .catch(() => null);
+    const queue = db.queues[gamemode];
+
+    const channelId = config.queueChannels?.[gamemode];
+
+    if (!channelId) return;
+
+    const channel = client.channels.cache.get(channelId);
 
     if (!channel) return;
 
-    const message = await channel.messages
-        .fetch(panel.messageId)
-        .catch(() => null);
-
-    if (!message) return;
-
-    // Active Test
-    const active = db.active_tests[gamemode];
-
-    // Queue Players
-    const queue = db.queue
-        .filter(q => q.gamemode === gamemode)
-        .sort((a, b) => a.joinedAt - b.joinedAt);
-
-    // Remove current testing player
-    const players = active
-        ? queue.filter(q => q.userId !== active.playerId)
-        : queue;
-
-    let description = "";
-
-    if (players.length === 0) {
-
-        description = "```No players in queue.```";
-
-    } else {
-
-        description = players
-            .map((p, i) =>
-                `${i + 1}. <@${p.userId}>`
-            )
-            .join("\n");
-
-    }
+    const description = queue.length
+        ? queue
+              .map((id, index) => `${index + 1}. <@${id}>`)
+              .join("\n")
+        : "No players in queue.";
 
     const embed = new EmbedBuilder()
 
-        .setColor(config.settings.embedColor)
+        .setColor("Blue")
 
-        .setTitle(
-            `${config.emojis[gamemode]} ${gamemode.toUpperCase()} Queue`
-        )
+        .setTitle(`🎮 ${gamemode.toUpperCase()} Queue`)
 
-        .addFields(
-
-            {
-                name: "🟢 Status",
-                value: active ? "Testing" : "Open",
-                inline: true
-            },
-
-            {
-                name: "👨‍⚖️ Current Tester",
-                value: active
-                    ? `<@${active.testerId}>`
-                    : "None",
-                inline: true
-            },
-
-            {
-                name: "👤 Current Player",
-                value: active
-                    ? `<@${active.playerId}>`
-                    : "None",
-                inline: true
-            },
-
-            {
-                name: "━━━━━━━━━━━━━━",
-                value: description
-            },
-
-            {
-                name: "Players",
-                value: `${players.length}`,
-                inline: true
-            }
-
-        )
+        .setDescription(description)
 
         .setFooter({
-    text: "Developed by MHGAMING"
-})
-.setTimestamp();
+            text: "⚡ Developed by MHGAMING"
+        })
 
         .setTimestamp();
 
-    await message.edit({
-        embeds: [embed]
-    });
+    const messages = await channel.messages.fetch({ limit: 10 });
+
+    const oldMessage = messages.find(
+        (m) =>
+            m.author.id === client.user.id &&
+            m.embeds.length > 0
+    );
+
+    if (oldMessage) {
+
+        await oldMessage.edit({
+            embeds: [embed]
+        });
+
+    } else {
+
+        await channel.send({
+            embeds: [embed]
+        });
+
+    }
 
 };
