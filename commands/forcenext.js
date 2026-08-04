@@ -1,21 +1,20 @@
 const {
-    SlashCommandBuilder,
-    PermissionFlagsBits,
-    EmbedBuilder
+    SlashCommandBuilder
 } = require("discord.js");
 
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("forcenext")
-        .setDescription("Force skip the first player in queue")
+        .setDescription("Force skip current player and take next player")
+        .setDefaultMemberPermissions("0")
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Select Gamemode")
+                .setDescription("Select gamemode")
                 .setRequired(true)
                 .addChoices(
                     { name: "UHC", value: "uhc" },
@@ -26,80 +25,67 @@ module.exports = {
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
-        )
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction, client) {
 
-        const gamemode = interaction.options.getString("gamemode");
-
-        const firstPlayer = db.prepare(`
-            SELECT *
-            FROM queue
-            WHERE gamemode = ?
-            ORDER BY joinedAt ASC
-            LIMIT 1
-        `).get(gamemode);
-
-        if (!firstPlayer) {
-
+        if (!interaction.member.permissions.has("ManageGuild")) {
             return interaction.reply({
-                content: "❌ Queue is empty.",
+                content: "❌ You don't have permission.",
                 ephemeral: true
             });
-
         }
 
-        // Remove first player
-        db.prepare(`
-            DELETE FROM queue
-            WHERE userId = ?
-        `).run(firstPlayer.userId);
+        const gamemode = interaction.options.getString("gamemode");
 
-        // Update queue panel
+        const db = load();
+
+        if (!db.queue) db.queue = [];
+        if (!db.active_tests) db.active_tests = {};
+
+        // Remove current active test if exists
+        delete db.active_tests[gamemode];
+
+        const queue = db.queue
+            .filter(q => q.gamemode === gamemode)
+            .sort((a, b) => a.joinedAt - b.joinedAt);
+
+        if (queue.length === 0) {
+
+            save(db);
+
+            await updateQueue(client, gamemode);
+
+            return interaction.reply({
+                content: `❌ No players are waiting in **${gamemode.toUpperCase()}** queue.`,
+                ephemeral: true
+            });
+        }
+
+        const player = queue[0];
+
+        db.active_tests[gamemode] = {
+
+            testerId: interaction.user.id,
+            playerId: player.userId,
+            startedAt: Date.now()
+
+        };
+
+        save(db);
+
         await updateQueue(client, gamemode);
 
-        // Next player
-        const nextPlayer = db.prepare(`
-            SELECT *
-            FROM queue
-            WHERE gamemode = ?
-            ORDER BY joinedAt ASC
-            LIMIT 1
-        `).get(gamemode);
+        return interaction.reply({
 
-        const embed = new EmbedBuilder()
+            content:
+`✅ Forced next player.
 
-            .setColor("Orange")
+👤 Player: <@${player.userId}>
+🎮 Gamemode: **${gamemode.toUpperCase()}**`,
 
-            .setTitle("⏭ Queue Skipped")
+            ephemeral: true
 
-            .addFields(
-                {
-                    name: "Skipped Player",
-                    value: `<@${firstPlayer.userId}>`,
-                    inline: true
-                },
-                {
-                    name: "Next Player",
-                    value: nextPlayer
-                        ? `<@${nextPlayer.userId}>`
-                        : "None",
-                    inline: true
-                },
-                {
-                    name: "Gamemode",
-                    value: gamemode.toUpperCase(),
-                    inline: true
-                }
-            )
-
-            .setTimestamp();
-
-        await interaction.reply({
-            embeds: [embed]
         });
 
     }
