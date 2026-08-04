@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "Professional Minecraft Tier Testing Bot (JSON Database)",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node .",
     "dev": "nodemon ."
