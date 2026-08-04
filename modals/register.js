@@ -1,4 +1,4 @@
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 
 module.exports = {
 
@@ -10,30 +10,28 @@ module.exports = {
         const region = interaction.fields.getTextInputValue("region");
         const account = interaction.fields.getTextInputValue("account");
 
-        db.prepare(`
-        INSERT OR REPLACE INTO players
-        (
-            userId,
-            username,
-            displayName,
-            avatar,
+        const db = load();
+
+        db.players[interaction.user.id] = {
+
+            userId: interaction.user.id,
+            username: interaction.user.username,
+            displayName: interaction.user.displayName,
+            avatar: interaction.user.displayAvatarURL(),
+
             ign,
             region,
-            accountType,
-            registeredAt
-        )
-        VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            interaction.user.id,
-            interaction.user.username,
-            interaction.user.displayName,
-            interaction.user.displayAvatarURL(),
-            ign,
-            region,
-            account,
-            new Date().toISOString()
-        );
+            accountType: account,
+
+            elo: 1000,
+            wins: 0,
+            losses: 0,
+
+            registeredAt: new Date().toISOString()
+
+        };
+
+        save(db);
 
         await interaction.reply({
 
