@@ -80,25 +80,25 @@ module.exports = {
                 new ButtonBuilder()
                     .setCustomId("queue_smp")
                     .setLabel("SMP")
-                    .setEmoji("🌍")
+                    .setEmoji("<:smp:1508478184348188903>")
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
                     .setCustomId("queue_sword")
                     .setLabel("Sword")
-                    .setEmoji("🗡️")
+                    .setEmoji("<:diamond_sword:1508478005876359208>")
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
                     .setCustomId("queue_mace")
                     .setLabel("Mace")
-                    .setEmoji("🔨")
+                    .setEmoji("<:mace:1508478497209978981>")
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
                     .setCustomId("queue_axe")
                     .setLabel("Axe")
-                    .setEmoji("🪓")
+                    .setEmoji("<:axe:1508478292024627463>")
                     .setStyle(ButtonStyle.Secondary)
             );
 
