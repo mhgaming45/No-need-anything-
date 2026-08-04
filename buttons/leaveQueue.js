@@ -1,4 +1,4 @@
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
@@ -7,14 +7,14 @@ module.exports = {
 
     async execute(interaction, client) {
 
-        // Check if player is in queue
-        const player = db.prepare(`
-            SELECT *
-            FROM queue
-            WHERE userId = ?
-        `).get(interaction.user.id);
+        const db = load();
 
-        if (!player) {
+        // Find Player
+        const index = db.queue.findIndex(
+            q => q.userId === interaction.user.id
+        );
+
+        if (index === -1) {
 
             return interaction.reply({
 
@@ -26,20 +26,19 @@ module.exports = {
 
         }
 
-        // Remove from queue
-        db.prepare(`
-            DELETE FROM queue
-            WHERE userId = ?
-        `).run(interaction.user.id);
+        const gamemode = db.queue[index].gamemode;
 
-        // Update queue panel
-        await updateQueue(client, player.gamemode);
+        // Remove From Queue
+        db.queue.splice(index, 1);
 
-        // Success message
-        await interaction.reply({
+        save(db);
 
-            content:
-`✅ You have left the **${player.gamemode.toUpperCase()}** queue.`,
+        // Update Queue Panel
+        await updateQueue(client, gamemode);
+
+        return interaction.reply({
+
+            content: `✅ You left the **${gamemode.toUpperCase()}** queue.`,
 
             ephemeral: true
 
