@@ -4,10 +4,7 @@ module.exports = {
 
     async execute(interaction, client) {
 
-        // =========================
-        // SLASH COMMANDS
-        // =========================
-
+        // Slash Commands
         if (interaction.isChatInputCommand()) {
 
             const command = client.commands.get(interaction.commandName);
@@ -25,14 +22,14 @@ module.exports = {
                 if (interaction.replied || interaction.deferred) {
 
                     await interaction.followUp({
-                        content: "❌ Command Error.",
+                        content: "❌ An error occurred while executing this command.",
                         ephemeral: true
                     });
 
                 } else {
 
                     await interaction.reply({
-                        content: "❌ Command Error.",
+                        content: "❌ An error occurred while executing this command.",
                         ephemeral: true
                     });
 
@@ -44,33 +41,12 @@ module.exports = {
 
         }
 
-        // =========================
-        // BUTTONS
-        // =========================
-
+        // Buttons
         if (interaction.isButton()) {
 
-            let button = client.buttons.get(interaction.customId);
+            const id = interaction.customId.split("_")[0];
 
-            // queue_uhc, queue_sword...
-            if (!button && interaction.customId.startsWith("queue_")) {
-                button = client.buttons.get("queue");
-            }
-
-            // pass_uhc_userid
-            if (!button && interaction.customId.startsWith("pass_")) {
-                button = client.buttons.get("pass");
-            }
-
-            // fail_uhc_userid
-            if (!button && interaction.customId.startsWith("fail_")) {
-                button = client.buttons.get("fail");
-            }
-
-            // set_tier_uhc_userid
-            if (!button && interaction.customId.startsWith("set_tier_")) {
-                button = client.buttons.get("set_tier");
-            }
+            const button = client.buttons.get(id);
 
             if (!button) return;
 
@@ -85,11 +61,8 @@ module.exports = {
                 if (!interaction.replied) {
 
                     await interaction.reply({
-
-                        content: "❌ Button Error.",
-
+                        content: "❌ Button error.",
                         ephemeral: true
-
                     });
 
                 }
@@ -100,23 +73,12 @@ module.exports = {
 
         }
 
-        // =========================
-        // MODALS
-        // =========================
-
+        // Modals
         if (interaction.isModalSubmit()) {
 
-            let modal = client.modals.get(interaction.customId);
+            const id = interaction.customId.split("_")[0];
 
-            // register_modal
-            if (!modal && interaction.customId === "register_modal") {
-                modal = client.modals.get("register_modal");
-            }
-
-            // tier_modal_uhc_123456789
-            if (!modal && interaction.customId.startsWith("tier_modal_")) {
-                modal = client.modals.get("tier_modal");
-            }
+            const modal = client.modals.get(id);
 
             if (!modal) return;
 
@@ -131,11 +93,8 @@ module.exports = {
                 if (!interaction.replied) {
 
                     await interaction.reply({
-
-                        content: "❌ Modal Error.",
-
+                        content: "❌ Modal error.",
                         ephemeral: true
-
                     });
 
                 }
