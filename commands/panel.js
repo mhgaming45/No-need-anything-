@@ -65,13 +65,13 @@ module.exports = {
                 new ButtonBuilder()
                     .setCustomId("queue_nethpot")
                     .setLabel("NethPot")
-                    .setEmoji("🔥")
+                    .setEmoji("<:neth:1508477782902964404>")
                     .setStyle(ButtonStyle.Secondary),
 
                 new ButtonBuilder()
                     .setCustomId("queue_vanilla")
                     .setLabel("Vanilla")
-                    .setEmoji("💎")
+                    .setEmoji("<:crystal:1508477864377581578>")
                     .setStyle(ButtonStyle.Secondary)
             );
 
