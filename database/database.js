@@ -54,7 +54,7 @@ function save(data) {
 
 }
 
-export default = {
+export default {
 
     load,
     save
