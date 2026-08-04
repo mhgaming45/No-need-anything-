@@ -2,24 +2,28 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = (client) => {
-    const commandsPath = path.join(__dirname, "..", "commands");
 
-    if (!fs.existsSync(commandsPath)) {
-        fs.mkdirSync(commandsPath, { recursive: true });
-    }
+    client.commands = new Map();
 
-    const commandFiles = fs.readdirSync(commandsPath)
+    const commandPath = path.join(__dirname, "..", "commands");
+
+    const commandFiles = fs
+        .readdirSync(commandPath)
         .filter(file => file.endsWith(".js"));
 
     for (const file of commandFiles) {
-        const command = require(path.join(commandsPath, file));
 
-        if (!command.data || !command.execute) {
-            console.log(`[WARNING] ${file} is missing data or execute.`);
+        const command = require(path.join(commandPath, file));
+
+        if (!command.name) {
+            console.log(`❌ ${file} is missing command name.`);
             continue;
         }
 
-        client.commands.set(command.data.name, command);
-        console.log(`[COMMAND] Loaded ${command.data.name}`);
+        client.commands.set(command.name, command);
+
+        console.log(`✅ Loaded Command: ${command.name}`);
+
     }
+
 };
