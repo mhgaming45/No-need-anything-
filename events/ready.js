@@ -1,6 +1,4 @@
-const {
-    ActivityType
-} = require("discord.js");
+const { ActivityType } = require("discord.js");
 
 module.exports = {
 
@@ -9,27 +7,25 @@ module.exports = {
 
     async execute(client) {
 
-        console.log("====================================");
+        console.log("=================================");
         console.log(`✅ Logged in as ${client.user.tag}`);
-        console.log(`✅ Guilds: ${client.guilds.cache.size}`);
-        console.log("====================================");
+        console.log(`🌍 Servers : ${client.guilds.cache.size}`);
+        console.log("=================================");
 
         client.user.setPresence({
 
+            status: "online",
+
             activities: [
-
                 {
-
                     name: "Professional Tier Testing",
                     type: ActivityType.Watching
-
                 }
-
-            ],
-
-            status: "online"
+            ]
 
         });
+
+        console.log("✅ Bot Ready!");
 
     }
 
