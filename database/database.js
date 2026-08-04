@@ -1,43 +1,36 @@
-const sqlite3 = require("sqlite3").verbose();
+const fs = require("fs");
 const path = require("path");
 
-const db = new sqlite3.Database(
-    path.join(__dirname, "database.sqlite"),
-    (err) => {
-        if (err) {
-            console.error("❌ SQLite Error:", err.message);
-        } else {
-            console.log("✅ Connected to SQLite Database");
-        }
-    }
-);
+const dbPath = path.join(__dirname, "..", "database.json");
 
-// Promisified helper functions
-db.runAsync = (sql, params = []) =>
-    new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
-            if (err) reject(err);
-            else resolve(this);
-        });
-    });
+// Agar database.json nahi hai to automatically bana dega
+if (!fs.existsSync(dbPath)) {
+    fs.writeFileSync(
+        dbPath,
+        JSON.stringify({
+            players: {},
+            tiers: {},
+            queue: [],
+            active_tests: {},
+            queue_messages: {},
+            tester_stats: {},
+            history: [],
+            settings: {}
+        }, null, 4)
+    );
+}
 
-db.getAsync = (sql, params = []) =>
-    new Promise((resolve, reject) => {
-        db.get(sql, params, (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-        });
-    });
+// Load Database
+function load() {
+    return JSON.parse(fs.readFileSync(dbPath, "utf8"));
+}
 
-db.allAsync = (sql, params = []) =>
-    new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
+// Save Database
+function save(data) {
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 4));
+}
 
-// Load database schema
-require("./schema")(db);
-
-module.exports = db;
+module.exports = {
+    load,
+    save
+};
