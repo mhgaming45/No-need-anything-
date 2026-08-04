@@ -1,4 +1,4 @@
-const db = require("../database/database");
+const { load, save } = require("../database/database");
 const updateQueue = require("../utils/updateQueue");
 
 module.exports = {
@@ -7,47 +7,37 @@ module.exports = {
 
     async execute(interaction, client) {
 
-        const active = db.prepare(`
-            SELECT *
-            FROM active_tests
-            WHERE testerId = ?
-        `).get(interaction.user.id);
+        const args = interaction.customId.split("_");
 
-        if (!active) {
-            return interaction.reply({
-                content: "❌ No active test.",
-                ephemeral: true
-            });
+        // fail_gamemode_userid
+        const gamemode = args[1];
+        const userId = args[2];
+
+        const db = load();
+
+        // Increase Losses
+        if (db.players[userId]) {
+            db.players[userId].losses =
+                (db.players[userId].losses || 0) + 1;
         }
 
-        // Add loss
-        db.prepare(`
-            UPDATE players
-            SET losses = losses + 1
-            WHERE userId = ?
-        `).run(active.playerId);
+        // Remove from Queue
+        db.queue = db.queue.filter(
+            q => q.userId !== userId
+        );
 
-        // Remove player from queue
-        db.prepare(`
-            DELETE FROM queue
-            WHERE userId = ?
-        `).run(active.playerId);
+        // Remove Active Test
+        delete db.active_tests[gamemode];
 
-        // Remove active test
-        db.prepare(`
-            DELETE FROM active_tests
-            WHERE gamemode = ?
-        `).run(active.gamemode);
+        save(db);
 
-        // Update queue
-        await updateQueue(client, active.gamemode);
+        // Update Queue Panel
+        await updateQueue(client, gamemode);
 
         await interaction.update({
 
             content:
-`❌ <@${active.playerId}> failed the test.
-
-Player has been removed from the queue.`,
+`❌ <@${userId}> has **FAILED** the ${gamemode.toUpperCase()} test.`,
 
             embeds: [],
             components: []
