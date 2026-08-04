@@ -2,24 +2,35 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = (client) => {
+
     const eventsPath = path.join(__dirname, "..", "events");
 
-    if (!fs.existsSync(eventsPath)) {
-        fs.mkdirSync(eventsPath, { recursive: true });
-    }
-
-    const eventFiles = fs.readdirSync(eventsPath)
+    const eventFiles = fs
+        .readdirSync(eventsPath)
         .filter(file => file.endsWith(".js"));
 
     for (const file of eventFiles) {
+
         const event = require(path.join(eventsPath, file));
 
-        if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args, client));
-        } else {
-            client.on(event.name, (...args) => event.execute(...args, client));
-        }
+        const eventName = file.split(".")[0];
 
-        console.log(`[EVENT] Loaded ${event.name}`);
+        client.on(eventName, (...args) => {
+
+            try {
+
+                event.execute(client, ...args);
+
+            } catch (err) {
+
+                console.error(`❌ Error in event ${eventName}:`, err);
+
+            }
+
+        });
+
+        console.log(`✅ Loaded Event: ${eventName}`);
+
     }
+
 };
