@@ -31,11 +31,11 @@ module.exports = async (client, gamemode) => {
 
             players.length
                 ? players
-                      .map(
-                          (p, i) =>
-                              `${i + 1}. <@${p.userId}>`
-                      )
-                      .join("\n")
+    .map(
+        (p, i) =>
+            `**${i + 1}.** <@${p.userId}>`
+    )
+    .join("\n")
                 : "No players in queue."
 
         )
