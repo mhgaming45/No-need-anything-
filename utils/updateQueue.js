@@ -25,7 +25,9 @@ module.exports = async (client, gamemode) => {
 
         .setColor("Blue")
 
-        .setTitle(`🎮 ${gamemode.toUpperCase()} Queue`)
+        .setTitle(
+    `🎮 ${gamemode.toUpperCase()} Queue (${players.length})`
+)
 
         .setDescription(
 
