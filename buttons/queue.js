@@ -13,18 +13,13 @@ module.exports = {
         const db = load();
 
         // Check Register
-        const player = db.players.find(
-            p => p.userId === interaction.user.id
-        );
+        const player = db.players[interaction.user.id];
 
         if (!player) {
 
             return interaction.reply({
-
                 content: "❌ Please register first.",
-
                 ephemeral: true
-
             });
 
         }
@@ -37,14 +32,14 @@ module.exports = {
         if (already) {
 
             return interaction.reply({
-
                 content: `❌ You are already in **${already.gamemode.toUpperCase()}** queue.`,
-
                 ephemeral: true
-
             });
 
         }
+
+        // Save Gamemode
+        player.gamemode = gamemode;
 
         // Join Queue
         db.queue.push({
@@ -58,7 +53,7 @@ module.exports = {
 
         save(db);
 
-        // Give Access
+        // Give Channel Access
         const channelId = config.queueChannels[gamemode];
 
         if (channelId) {
@@ -68,24 +63,19 @@ module.exports = {
             if (channel) {
 
                 await channel.permissionOverwrites.edit(
-
                     interaction.user.id,
-
                     {
-
                         ViewChannel: true,
                         SendMessages: true,
                         ReadMessageHistory: true
-
                     }
-
                 ).catch(() => {});
 
             }
 
         }
 
-        // Update Queue Panel
+        // Update Queue
         await updateQueue(client, gamemode);
 
         return interaction.reply({
