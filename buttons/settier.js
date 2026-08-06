@@ -11,14 +11,10 @@ module.exports = {
 
     async execute(interaction) {
 
-        const args = interaction.customId.split("_");
-
-        // settier_gamemode_userid
-        const gamemode = args[1];
-        const userId = args[2];
+        const [, userId, gamemode] = interaction.customId.split("_");
 
         const modal = new ModalBuilder()
-            .setCustomId(`tier_modal_${gamemode}_${userId}`)
+            .setCustomId(`tiermodal_${userId}_${gamemode}`)
             .setTitle("Set Player Tier");
 
         const tier = new TextInputBuilder()
@@ -27,11 +23,12 @@ module.exports = {
             .setPlaceholder("HT5, HT4, HT3, HT2, HT1, LT1, LT2, LT3, LT4, LT5")
             .setStyle(TextInputStyle.Short)
             .setRequired(true)
+            .setMinLength(3)
             .setMaxLength(3);
 
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(tier)
-        );
+        const row = new ActionRowBuilder().addComponents(tier);
+
+        modal.addComponents(row);
 
         await interaction.showModal(modal);
 
