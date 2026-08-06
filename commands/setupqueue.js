@@ -1,6 +1,6 @@
 const {
     SlashCommandBuilder,
-    EmbedBuilder
+    PermissionFlagsBits
 } = require("discord.js");
 
 const { load, save } = require("../database/database");
@@ -10,8 +10,11 @@ const config = require("../config");
 module.exports = {
 
     data: new SlashCommandBuilder()
+
         .setName("setupqueue")
+
         .setDescription("Setup Queue Panel")
+
         .addStringOption(option =>
             option
                 .setName("gamemode")
@@ -26,71 +29,48 @@ module.exports = {
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
+        )
+
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction, client) {
 
-        if (!interaction.member.permissions.has("ManageGuild")) {
-            return interaction.reply({
-                content: "❌ You don't have permission.",
-                ephemeral: true
-            });
-        }
+        const gamemode =
+            interaction.options.getString("gamemode");
 
-        const gamemode = interaction.options.getString("gamemode");
-
-        const channelId = config.queueChannels[gamemode];
+        const channelId =
+            config.queueChannels[gamemode];
 
         if (!channelId) {
+
             return interaction.reply({
-                content: "❌ Queue channel not found in config.",
+
+                content:
+                    "❌ Queue channel not found.",
+
                 ephemeral: true
+
             });
+
         }
 
-        const channel = interaction.guild.channels.cache.get(channelId);
+        const channel =
+            interaction.guild.channels.cache.get(channelId);
 
         if (!channel) {
+
             return interaction.reply({
-                content: "❌ Queue channel not found.",
+
+                content:
+                    "❌ Invalid queue channel.",
+
                 ephemeral: true
+
             });
+
         }
-
-        const embed = new EmbedBuilder()
-            .setColor(config.settings.embedColor)
-            .setTitle(`${config.emojis[gamemode]} ${gamemode.toUpperCase()} Queue`)
-            .setDescription("```No players in queue.```")
-            .addFields(
-                {
-                    name: "🟢 Status",
-                    value: "Open",
-                    inline: true
-                },
-                {
-                    name: "👨‍⚖️ Current Tester",
-                    value: "None",
-                    inline: true
-                },
-                {
-                    name: "👤 Current Player",
-                    value: "None",
-                    inline: true
-                },
-                {
-                    name: "Players",
-                    value: "0",
-                    inline: true
-                }
-            )
-            .setFooter({
-                text: "Developed by MHGAMING"
-            })
-            .setTimestamp();
-
-        const msg = await channel.send({
-            embeds: [embed]
-        });
 
         const db = load();
 
@@ -99,8 +79,8 @@ module.exports = {
 
         db.queue_messages[gamemode] = {
 
-            channelId: channel.id,
-            messageId: msg.id
+            channelId,
+            messageId: null
 
         };
 
@@ -110,7 +90,8 @@ module.exports = {
 
         await interaction.reply({
 
-            content: `✅ ${gamemode.toUpperCase()} Queue Panel Created.`,
+            content:
+                `✅ ${gamemode.toUpperCase()} Queue setup completed.`,
 
             ephemeral: true
 
