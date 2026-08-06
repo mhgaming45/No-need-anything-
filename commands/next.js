@@ -78,14 +78,12 @@ module.exports = {
         }
 
         db.active_tests[gamemode] = {
-
-            userId: player.userId,
-
-            testerId: interaction.user.id,
-
-            startedAt: Date.now()
-
-        };
+    player: player.userId,
+    userId: player.userId,
+    testerId: interaction.user.id,
+    gamemode: gamemode,
+    startedAt: Date.now()
+};
 
         save(db);
 
