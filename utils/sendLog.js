@@ -7,61 +7,57 @@ module.exports = async (
     player,
     gamemode,
     result,
-    tier = null
+    tier = "None"
 ) => {
 
-    const channel = client.channels.cache.get(config.channels.logs);
+    try {
 
-    if (!channel) return;
+        const channel = await client.channels.fetch(config.channels.logs).catch(() => null);
 
-    const embed = new EmbedBuilder()
+        if (!channel) return;
 
-        .setColor(result === "PASS" ? "Green" : "Red")
+        const embed = new EmbedBuilder()
+            .setColor(result === "PASS" ? "#00ff00" : "#ff0000")
+            .setTitle("📝 Tier Test Log")
+            .setThumbnail(player.displayAvatarURL({ dynamic: true }))
+            .addFields(
+                {
+                    name: "👨‍⚖️ Tester",
+                    value: `${tester}`,
+                    inline: true
+                },
+                {
+                    name: "👤 Player",
+                    value: `${player}`,
+                    inline: true
+                },
+                {
+                    name: "🎮 Gamemode",
+                    value: gamemode.toUpperCase(),
+                    inline: true
+                },
+                {
+                    name: "📊 Result",
+                    value: result,
+                    inline: true
+                },
+                {
+                    name: "🏆 Tier",
+                    value: tier,
+                    inline: true
+                }
+            )
+            .setFooter({
+                text: config.settings.footer
+            })
+            .setTimestamp();
 
-        .setTitle("📝 Test Log")
+        await channel.send({
+            embeds: [embed]
+        });
 
-        .addFields(
-
-            {
-                name: "👨‍⚖️ Tester",
-                value: `<@${tester.id}>`,
-                inline: true
-            },
-
-            {
-                name: "👤 Player",
-                value: `<@${player.id}>`,
-                inline: true
-            },
-
-            {
-                name: "🎮 Gamemode",
-                value: gamemode,
-                inline: true
-            },
-
-            {
-                name: "📊 Result",
-                value: result,
-                inline: true
-            },
-
-            {
-                name: "🏆 Tier",
-                value: tier || "None",
-                inline: true
-            }
-
-        )
-
-        .setFooter({
-            text: "⚡ Developed by MHGAMING"
-        })
-
-        .setTimestamp();
-
-    await channel.send({
-        embeds: [embed]
-    });
+    } catch (err) {
+        console.error("SendTestLog Error:", err);
+    }
 
 };
