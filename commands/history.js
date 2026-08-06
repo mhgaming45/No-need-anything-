@@ -9,31 +9,27 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("history")
-        .setDescription("View a player's tier history")
+        .setDescription("View player's testing history")
         .addUserOption(option =>
             option
-                .setName("user")
-                .setDescription("Player")
-                .setRequired(true)
+                .setName("player")
+                .setDescription("Select Player")
+                .setRequired(false)
         ),
 
     async execute(interaction) {
 
-        const user = interaction.options.getUser("user");
+        const target =
+            interaction.options.getUser("player") ||
+            interaction.user;
 
         const db = load();
 
-        if (!db.history) db.history = [];
-
-        const history = db.history.filter(
-            h => h.userId === user.id
-        );
-
-        if (history.length === 0) {
+        if (!db.players || !db.players[target.id]) {
 
             return interaction.reply({
 
-                content: "❌ No history found.",
+                content: "❌ Player not registered.",
 
                 ephemeral: true
 
@@ -41,34 +37,55 @@ module.exports = {
 
         }
 
+        const player = db.players[target.id];
+
+        const history = (db.history || [])
+            .filter(h => h.userId === target.id)
+            .slice(-10)
+            .reverse();
+
         const embed = new EmbedBuilder()
 
-            .setColor("#5865F2")
+            .setColor("Blue")
 
-            .setTitle(`${user.username}'s Tier History`)
+            .setTitle(`${player.ign} • Test History`)
+
+            .setThumbnail(player.avatar)
+
+            .addFields(
+
+                {
+                    name: "🏆 Tier",
+                    value: player.tier || "Unranked",
+                    inline: true
+                },
+
+                {
+                    name: "✅ Wins",
+                    value: String(player.wins || 0),
+                    inline: true
+                },
+
+                {
+                    name: "❌ Losses",
+                    value: String(player.losses || 0),
+                    inline: true
+                }
+
+            )
 
             .setDescription(
 
-                history
-                    .reverse()
-                    .slice(0, 15)
-                    .map((h, i) =>
-
-`${i + 1}. **${h.gamemode.toUpperCase()}**
-Old Tier : ${h.oldTier || "None"}
-New Tier : ${h.newTier}
-Tester : <@${h.testerId}>
-<t:${Math.floor(new Date(h.createdAt).getTime() / 1000)}:R>`
-
-                    )
-                    .join("\n\n")
+                history.length
+                    ? history.map((h, i) =>
+                        `**${i + 1}.** ${h.gamemode.toUpperCase()} • ${h.result} • ${h.tier || "No Tier"}`
+                    ).join("\n")
+                    : "No history found."
 
             )
 
             .setFooter({
-
-                text: "Developed By MHGAMING"
-
+                text: "Developed by MHGAMING"
             })
 
             .setTimestamp();
