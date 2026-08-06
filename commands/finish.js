@@ -1,7 +1,6 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
-    EmbedBuilder
+    PermissionFlagsBits
 } = require("discord.js");
 
 const { load, save } = require("../database/database");
@@ -10,11 +9,11 @@ const updateQueue = require("../utils/updateQueue");
 module.exports = {
 
     data: new SlashCommandBuilder()
+
         .setName("finish")
+
         .setDescription("Finish current test")
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
-        )
+
         .addStringOption(option =>
             option
                 .setName("gamemode")
@@ -29,6 +28,10 @@ module.exports = {
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
+        )
+
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction, client) {
@@ -41,14 +44,14 @@ module.exports = {
         if (!db.active_tests)
             db.active_tests = {};
 
-        const active = db.active_tests[gamemode];
+        const test = db.active_tests[gamemode];
 
-        if (!active) {
+        if (!test) {
 
             return interaction.reply({
 
                 content:
-                    "❌ No active test found for this gamemode.",
+                    "❌ No active test for this gamemode.",
 
                 ephemeral: true
 
@@ -56,27 +59,29 @@ module.exports = {
 
         }
 
+        db.queue = db.queue.filter(
+            q =>
+                !(
+                    q.userId === test.player &&
+                    q.gamemode === gamemode
+                )
+        );
+
         delete db.active_tests[gamemode];
 
         save(db);
 
         await updateQueue(client, gamemode);
 
-        const embed = new EmbedBuilder()
+        await interaction.reply({
 
-            .setColor("Green")
+            content:
+`✅ Test finished.
 
-            .setTitle("✅ Test Finished")
+👤 Player: <@${test.player}>
+🎮 Gamemode: **${gamemode.toUpperCase()}**
 
-            .setDescription(
-                `The current **${gamemode.toUpperCase()}** test has been finished.\n\nYou can now use **/next** to test the next player.`
-            )
-
-            .setTimestamp();
-
-        return interaction.reply({
-
-            embeds: [embed]
+The player has been removed from the queue.`
 
         });
 
