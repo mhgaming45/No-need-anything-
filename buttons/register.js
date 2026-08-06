@@ -12,29 +12,27 @@ module.exports = {
     async execute(interaction) {
 
         const modal = new ModalBuilder()
-            .setCustomId("register_modal")
-            .setTitle("Tier Testing Registration");
+            .setCustomId("register")
+            .setTitle("Player Registration");
 
         const ign = new TextInputBuilder()
             .setCustomId("ign")
             .setLabel("Minecraft Username")
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder("Enter your IGN")
-            .setRequired(true)
-            .setMaxLength(16);
+            .setRequired(true);
 
         const region = new TextInputBuilder()
             .setCustomId("region")
             .setLabel("Region")
+            .setPlaceholder("AS / EU / NA / OCE")
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder("AS / EU / NA / ME")
             .setRequired(true);
 
         const account = new TextInputBuilder()
             .setCustomId("account")
             .setLabel("Account Type")
-            .setStyle(TextInputStyle.Short)
             .setPlaceholder("Premium / Cracked")
+            .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
         modal.addComponents(
