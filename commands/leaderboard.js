@@ -9,52 +9,68 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("leaderboard")
-        .setDescription("View the top players leaderboard"),
+        .setDescription("Show Tier Leaderboard"),
 
     async execute(interaction) {
 
         const db = load();
 
-        const players = Object.values(db.players || {});
+        if (!db.players) {
 
-        if (players.length === 0) {
             return interaction.reply({
-                content: "❌ No registered players found.",
+
+                content: "❌ No registered players.",
+
                 ephemeral: true
+
             });
+
+        }
+
+        const players = Object.values(db.players);
+
+        if (!players.length) {
+
+            return interaction.reply({
+
+                content: "❌ No registered players.",
+
+                ephemeral: true
+
+            });
+
         }
 
         players.sort((a, b) => {
 
-            if ((b.elo || 1000) !== (a.elo || 1000))
-                return (b.elo || 1000) - (a.elo || 1000);
+            if ((b.wins || 0) !== (a.wins || 0))
+                return (b.wins || 0) - (a.wins || 0);
 
-            return (b.wins || 0) - (a.wins || 0);
+            return (a.losses || 0) - (b.losses || 0);
 
         });
 
         const description = players
             .slice(0, 10)
-            .map((player, index) => {
-
-                return `**${index + 1}.** <@${player.userId}>
-🏆 ELO: **${player.elo || 1000}**
-✅ Wins: **${player.wins || 0}**
-❌ Losses: **${player.losses || 0}**`;
-
-            })
-            .join("\n\n");
+            .map((p, i) =>
+                `**${i + 1}.** <@${p.userId}> • 🏆 ${p.tier || "Unranked"} • ✅ ${p.wins || 0} • ❌ ${p.losses || 0}`
+            )
+            .join("\n");
 
         const embed = new EmbedBuilder()
 
-            .setColor("#5865F2")
+            .setColor("Gold")
 
-            .setTitle("🏆 Global Leaderboard")
+            .setTitle("🏆 Tier Leaderboard")
 
-            .setDescription(description)
+            .setDescription(
+                description || "No players found."
+            )
 
             .setFooter({
+
                 text: "Developed by MHGAMING"
+
             })
 
             .setTimestamp();
