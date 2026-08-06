@@ -1,4 +1,3 @@
-
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -12,28 +11,20 @@ module.exports = {
 
     async execute(interaction) {
 
-        const args = interaction.customId.split("_");
-
-        // pass_gamemode_userid
-        const gamemode = args[1];
-        const userId = args[2];
+        const [, gamemode, userId] = interaction.customId.split("_");
 
         const embed = new EmbedBuilder()
             .setColor("Green")
             .setTitle("✅ Player Passed")
             .setDescription(
-                `👤 Player: <@${userId}>\n\n` +
-                `Click **SET TIER** to assign the player's tier.`
+                `👤 **Player:** <@${userId}>\n\nClick **SET TIER** to assign the player's tier.`
             )
-            .setFooter({
-                text: "Developed by MHGAMING"
-            })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
 
             new ButtonBuilder()
-                .setCustomId(`settier_${gamemode}_${userId}`)
+                .setCustomId(`settier_${userId}_${gamemode}`)
                 .setLabel("SET TIER")
                 .setEmoji("🏆")
                 .setStyle(ButtonStyle.Success)
