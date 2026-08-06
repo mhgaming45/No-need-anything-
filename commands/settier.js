@@ -1,125 +1,74 @@
 const {
-    SlashCommandBuilder
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ActionRowBuilder
 } = require("discord.js");
 
-const { load, save } = require("../database/database");
-const config = require("../config");
+const { load } = require("../database/database");
 
 module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("settier")
-        .setDescription("Set a player's tier")
+        .setDescription("Manually set a player's tier")
         .addUserOption(option =>
             option
                 .setName("player")
-                .setDescription("Select player")
+                .setDescription("Select Player")
                 .setRequired(true)
         )
-        .addStringOption(option =>
-            option
-                .setName("gamemode")
-                .setDescription("Select gamemode")
-                .setRequired(true)
-                .addChoices(
-                    { name: "UHC", value: "uhc" },
-                    { name: "NethPot", value: "nethpot" },
-                    { name: "Vanilla", value: "vanilla" },
-                    { name: "SMP", value: "smp" },
-                    { name: "Sword", value: "sword" },
-                    { name: "Mace", value: "mace" },
-                    { name: "Axe", value: "axe" }
-                )
-        )
-        .addStringOption(option =>
-            option
-                .setName("tier")
-                .setDescription("Select tier")
-                .setRequired(true)
-                .addChoices(
-                    { name: "HT5", value: "HT5" },
-                    { name: "HT4", value: "HT4" },
-                    { name: "HT3", value: "HT3" },
-                    { name: "HT2", value: "HT2" },
-                    { name: "HT1", value: "HT1" },
-                    { name: "LT1", value: "LT1" },
-                    { name: "LT2", value: "LT2" },
-                    { name: "LT3", value: "LT3" },
-                    { name: "LT4", value: "LT4" },
-                    { name: "LT5", value: "LT5" }
-                )
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction) {
 
-        if (!interaction.member.permissions.has("ManageGuild")) {
-
-            return interaction.reply({
-                content: "❌ You don't have permission.",
-                ephemeral: true
-            });
-
-        }
-
         const user = interaction.options.getUser("player");
-        const gamemode = interaction.options.getString("gamemode");
-        const tier = interaction.options.getString("tier");
 
         const db = load();
 
         if (!db.players[user.id]) {
 
             return interaction.reply({
-                content: "❌ Player not registered.",
+
+                content: "❌ Player is not registered.",
+
                 ephemeral: true
+
             });
 
         }
 
-        if (!db.tiers) db.tiers = {};
+        const modal = new ModalBuilder()
 
-        if (!db.tiers[user.id]) {
-            db.tiers[user.id] = {};
-        }
+            .setCustomId(`tiermodal_${user.id}`)
 
-        db.tiers[user.id][gamemode] = tier;
+            .setTitle(`Set Tier • ${user.username}`);
 
-        save(db);
+        const tierInput = new TextInputBuilder()
 
-        const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+            .setCustomId("tier")
 
-        if (member) {
+            .setLabel("Enter Tier")
 
-            // Remove old tier roles
-            for (const roleId of Object.values(config.tierRoles)) {
+            .setPlaceholder("HT5, HT4, HT3, HT2, HT1, LT1, LT2, LT3, LT4, LT5")
 
-                if (member.roles.cache.has(roleId)) {
+            .setStyle(TextInputStyle.Short)
 
-                    await member.roles.remove(roleId).catch(() => {});
+            .setRequired(true)
 
-                }
+            .setMaxLength(3);
 
-            }
+        const row = new ActionRowBuilder()
 
-            // Give new role
-            const roleId = config.tierRoles[tier];
+            .addComponents(tierInput);
 
-            if (roleId) {
+        modal.addComponents(row);
 
-                await member.roles.add(roleId).catch(() => {});
-
-            }
-
-        }
-
-        await interaction.reply({
-
-            content:
-`✅ Successfully set **${user.username}** to **${tier}** in **${gamemode.toUpperCase()}**.`,
-
-            ephemeral: true
-
-        });
+        await interaction.showModal(modal);
 
     }
 
