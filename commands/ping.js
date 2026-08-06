@@ -7,57 +7,43 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("ping")
-        .setDescription("Check bot latency"),
+        .setDescription("Show bot latency"),
 
-    async execute(interaction) {
-
-        const sent = await interaction.reply({
-
-            content: "🏓 Pinging...",
-
-            fetchReply: true
-
-        });
-
-        const ping = sent.createdTimestamp - interaction.createdTimestamp;
-
-        const apiPing = Math.round(interaction.client.ws.ping);
+    async execute(interaction, client) {
 
         const embed = new EmbedBuilder()
 
-            .setColor("#5865F2")
+            .setColor("Green")
 
             .setTitle("🏓 Pong!")
 
             .addFields(
 
                 {
-                    name: "Bot Latency",
-                    value: `\`${ping}ms\``,
+                    name: "🤖 Bot Latency",
+                    value: `${Date.now() - interaction.createdTimestamp}ms`,
                     inline: true
                 },
 
                 {
-                    name: "API Latency",
-                    value: `\`${apiPing}ms\``,
+                    name: "🌐 API Latency",
+                    value: `${Math.round(client.ws.ping)}ms`,
                     inline: true
                 }
 
             )
 
             .setFooter({
-
                 text: "Developed by MHGAMING"
-
             })
 
             .setTimestamp();
 
-        await interaction.editReply({
+        await interaction.reply({
 
-            content: "",
+            embeds: [embed],
 
-            embeds: [embed]
+            ephemeral: true
 
         });
 
