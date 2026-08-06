@@ -3,7 +3,7 @@ const path = require("path");
 
 module.exports = (client) => {
 
-    const eventsPath = path.join(__dirname, "..", "events");
+    const eventsPath = path.join(__dirname, "../events");
 
     const eventFiles = fs
         .readdirSync(eventsPath)
@@ -13,23 +13,25 @@ module.exports = (client) => {
 
         const event = require(path.join(eventsPath, file));
 
-        const eventName = file.split(".")[0];
+        if (event.once) {
 
-        client.on(eventName, (...args) => {
+            client.once(
+                event.name,
+                (...args) => event.execute(...args, client)
+            );
 
-            try {
+        } else {
 
-                event.execute(client, ...args);
+            client.on(
+                event.name,
+                (...args) => event.execute(...args, client)
+            );
 
-            } catch (err) {
+        }
 
-                console.error(`❌ Error in event ${eventName}:`, err);
-
-            }
-
-        });
-
-        console.log(`✅ Loaded Event: ${eventName}`);
+        console.log(
+            `✅ Loaded Event: ${event.name}`
+        );
 
     }
 
