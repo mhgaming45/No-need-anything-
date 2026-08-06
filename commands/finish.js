@@ -9,11 +9,11 @@ const updateQueue = require("../utils/updateQueue");
 module.exports = {
 
     data: new SlashCommandBuilder()
-
         .setName("finish")
-
         .setDescription("Finish current test")
-
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
+        )
         .addStringOption(option =>
             option
                 .setName("gamemode")
@@ -28,21 +28,19 @@ module.exports = {
                     { name: "Mace", value: "mace" },
                     { name: "Axe", value: "axe" }
                 )
-        )
-
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction, client) {
 
-        const gamemode =
-            interaction.options.getString("gamemode");
+        const gamemode = interaction.options.getString("gamemode");
 
         const db = load();
 
         if (!db.active_tests)
             db.active_tests = {};
+
+        if (!db.queue)
+            db.queue = [];
 
         const test = db.active_tests[gamemode];
 
@@ -50,8 +48,7 @@ module.exports = {
 
             return interaction.reply({
 
-                content:
-                    "❌ No active test for this gamemode.",
+                content: "❌ No active test found for this gamemode.",
 
                 ephemeral: true
 
@@ -59,26 +56,29 @@ module.exports = {
 
         }
 
+        const playerId = test.player || test.userId;
+
+        // Remove player from queue
         db.queue = db.queue.filter(
             q =>
-                !(
-                    q.userId === test.player &&
-                    q.gamemode === gamemode
-                )
+                !(q.userId === playerId &&
+                  q.gamemode === gamemode)
         );
 
+        // Remove active test
         delete db.active_tests[gamemode];
 
         save(db);
 
+        // Update Queue
         await updateQueue(client, gamemode);
 
-        await interaction.reply({
+        return interaction.reply({
 
             content:
-`✅ Test finished.
+`✅ Test Finished Successfully!
 
-👤 Player: <@${test.player}>
+👤 Player: <@${playerId}>
 🎮 Gamemode: **${gamemode.toUpperCase()}**
 
 The player has been removed from the queue.`
