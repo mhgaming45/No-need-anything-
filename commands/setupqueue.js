@@ -10,11 +10,8 @@ const config = require("../config");
 module.exports = {
 
     data: new SlashCommandBuilder()
-
         .setName("setupqueue")
-
         .setDescription("Setup Queue Panel")
-
         .addStringOption(option =>
             option
                 .setName("gamemode")
@@ -30,73 +27,47 @@ module.exports = {
                     { name: "Axe", value: "axe" }
                 )
         )
-
-        .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageGuild
-        ),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction, client) {
 
-        const gamemode =
-            interaction.options.getString("gamemode");
+        const gamemode = interaction.options.getString("gamemode");
 
-        const channelId =
-            config.queueChannels[gamemode];
+        const channelId = config.queueChannels[gamemode];
 
-        if (!channelId) {
-
+        if (!channelId)
             return interaction.reply({
-
-                content:
-                    "❌ Queue channel not found.",
-
+                content: "❌ Queue channel not found.",
                 ephemeral: true
-
             });
 
-        }
+        const channel = interaction.guild.channels.cache.get(channelId);
 
-        const channel =
-            interaction.guild.channels.cache.get(channelId);
-
-        if (!channel) {
-
+        if (!channel)
             return interaction.reply({
-
-                content:
-                    "❌ Invalid queue channel.",
-
+                content: "❌ Invalid queue channel.",
                 ephemeral: true
-
             });
-
-        }
 
         const db = load();
 
         if (!db.queue_messages)
             db.queue_messages = {};
 
+        const msg = await channel.send("🔄 Creating Queue Panel...");
+
         db.queue_messages[gamemode] = {
-
-            channelId,
-            messageId: null
-
+            channelId: channel.id,
+            messageId: msg.id
         };
 
         save(db);
 
         await updateQueue(client, gamemode);
 
-        await interaction.reply({
-
-            content:
-                `✅ ${gamemode.toUpperCase()} Queue setup completed.`,
-
+        return interaction.reply({
+            content: `✅ ${gamemode.toUpperCase()} Queue Panel Created.`,
             ephemeral: true
-
         });
-
     }
-
 };
