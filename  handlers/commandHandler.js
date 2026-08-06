@@ -5,24 +5,26 @@ module.exports = (client) => {
 
     client.commands = new Map();
 
-    const commandPath = path.join(__dirname, "..", "commands");
+    const commandsPath = path.join(__dirname, "../commands");
 
     const commandFiles = fs
-        .readdirSync(commandPath)
+        .readdirSync(commandsPath)
         .filter(file => file.endsWith(".js"));
 
     for (const file of commandFiles) {
 
-        const command = require(path.join(commandPath, file));
+        const command = require(path.join(commandsPath, file));
 
-        if (!command.name) {
-            console.log(`❌ ${file} is missing command name.`);
-            continue;
-        }
+        if (!command.data) continue;
 
-        client.commands.set(command.name, command);
+        client.commands.set(
+            command.data.name,
+            command
+        );
 
-        console.log(`✅ Loaded Command: ${command.name}`);
+        console.log(
+            `✅ Loaded Command: ${command.data.name}`
+        );
 
     }
 
