@@ -1,5 +1,6 @@
 const {
     SlashCommandBuilder,
+    PermissionFlagsBits,
     EmbedBuilder,
     ActionRowBuilder,
     ButtonBuilder,
@@ -13,11 +14,14 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("next")
-        .setDescription("Get the next player from queue")
+        .setDescription("Start testing the next player")
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
+        )
         .addStringOption(option =>
             option
                 .setName("gamemode")
-                .setDescription("Select gamemode")
+                .setDescription("Select Gamemode")
                 .setRequired(true)
                 .addChoices(
                     { name: "UHC", value: "uhc" },
@@ -32,21 +36,13 @@ module.exports = {
 
     async execute(interaction, client) {
 
-        if (!interaction.member.permissions.has("ManageGuild")) {
-
-            return interaction.reply({
-
-                content: "❌ You don't have permission.",
-
-                ephemeral: true
-
-            });
-
-        }
-
-        const gamemode = interaction.options.getString("gamemode");
+        const gamemode =
+            interaction.options.getString("gamemode");
 
         const db = load();
+
+        if (!db.queue)
+            db.queue = [];
 
         if (!db.active_tests)
             db.active_tests = {};
@@ -55,7 +51,8 @@ module.exports = {
 
             return interaction.reply({
 
-                content: "❌ A player is already being tested.",
+                content:
+                    "❌ A test is already running for this gamemode.",
 
                 ephemeral: true
 
@@ -63,15 +60,16 @@ module.exports = {
 
         }
 
-        const queue = db.queue
-            .filter(q => q.gamemode === gamemode)
-            .sort((a, b) => a.joinedAt - b.joinedAt);
+        const player = db.queue.find(
+            q => q.gamemode === gamemode
+        );
 
-        if (queue.length === 0) {
+        if (!player) {
 
             return interaction.reply({
 
-                content: `❌ ${gamemode.toUpperCase()} queue is empty.`,
+                content:
+                    `❌ No players in ${gamemode.toUpperCase()} queue.`,
 
                 ephemeral: true
 
@@ -79,14 +77,12 @@ module.exports = {
 
         }
 
-        const player = queue[0];
-
-        const data = db.players[player.userId];
-
         db.active_tests[gamemode] = {
 
+            userId: player.userId,
+
             testerId: interaction.user.id,
-            playerId: player.userId,
+
             startedAt: Date.now()
 
         };
@@ -95,34 +91,52 @@ module.exports = {
 
         await updateQueue(client, gamemode);
 
+        const data = db.players[player.userId];
+
         const embed = new EmbedBuilder()
 
-            .setColor("#5865F2")
+            .setColor("Blue")
 
             .setTitle("🎮 Next Player")
+
+            .setThumbnail(
+                `https://mc-heads.net/avatar/${data.ign}/256`
+            )
 
             .addFields(
 
                 {
-                    name: "Player",
+                    name: "👤 Player",
                     value: `<@${player.userId}>`,
                     inline: true
                 },
 
                 {
-                    name: "IGN",
+                    name: "🎮 IGN",
                     value: data.ign,
                     inline: true
                 },
 
                 {
-                    name: "Region",
+                    name: "🌍 Region",
                     value: data.region,
                     inline: true
                 },
 
                 {
-                    name: "Gamemode",
+                    name: "💎 Account",
+                    value: data.accountType,
+                    inline: true
+                },
+
+                {
+                    name: "🏆 Tier",
+                    value: data.tier,
+                    inline: true
+                },
+
+                {
+                    name: "⚔️ Gamemode",
                     value: gamemode.toUpperCase(),
                     inline: true
                 }
@@ -143,17 +157,25 @@ module.exports = {
 
                 new ButtonBuilder()
 
-                    .setCustomId(`pass_${gamemode}_${player.userId}`)
+                    .setCustomId(
+                        `pass_${gamemode}_${player.userId}`
+                    )
 
                     .setLabel("PASS")
+
+                    .setEmoji("✅")
 
                     .setStyle(ButtonStyle.Success),
 
                 new ButtonBuilder()
 
-                    .setCustomId(`fail_${gamemode}_${player.userId}`)
+                    .setCustomId(
+                        `fail_${gamemode}_${player.userId}`
+                    )
 
                     .setLabel("FAIL")
+
+                    .setEmoji("❌")
 
                     .setStyle(ButtonStyle.Danger)
 
