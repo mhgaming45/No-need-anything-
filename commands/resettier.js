@@ -1,5 +1,6 @@
 const {
-    SlashCommandBuilder
+    SlashCommandBuilder,
+    PermissionFlagsBits
 } = require("discord.js");
 
 const { load, save } = require("../database/database");
@@ -16,63 +17,39 @@ module.exports = {
                 .setDescription("Select Player")
                 .setRequired(true)
         )
-        .addStringOption(option =>
-            option
-                .setName("gamemode")
-                .setDescription("Select Gamemode")
-                .setRequired(true)
-                .addChoices(
-                    { name: "UHC", value: "uhc" },
-                    { name: "NethPot", value: "nethpot" },
-                    { name: "Vanilla", value: "vanilla" },
-                    { name: "SMP", value: "smp" },
-                    { name: "Sword", value: "sword" },
-                    { name: "Mace", value: "mace" },
-                    { name: "Axe", value: "axe" }
-                )
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
         ),
 
     async execute(interaction) {
 
-        if (!interaction.member.permissions.has("ManageGuild")) {
-
-            return interaction.reply({
-                content: "❌ You don't have permission.",
-                ephemeral: true
-            });
-
-        }
-
         const user = interaction.options.getUser("player");
-        const gamemode = interaction.options.getString("gamemode");
 
         const db = load();
 
         if (!db.players[user.id]) {
 
             return interaction.reply({
-                content: "❌ Player not registered.",
+
+                content: "❌ Player is not registered.",
+
                 ephemeral: true
+
             });
 
         }
 
-        if (!db.tiers) db.tiers = {};
-
-        if (!db.tiers[user.id]) {
-            db.tiers[user.id] = {};
-        }
-
-        db.tiers[user.id][gamemode] = "Unranked";
+        db.players[user.id].tier = "Unranked";
 
         save(db);
 
-        // Remove Discord tier roles
-        const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+        const member = await interaction.guild.members
+            .fetch(user.id)
+            .catch(() => null);
 
         if (member) {
 
-            for (const roleId of Object.values(config.tierRoles)) {
+            for (const roleId of Object.values(config.roles)) {
 
                 if (member.roles.cache.has(roleId)) {
 
@@ -87,7 +64,9 @@ module.exports = {
         await interaction.reply({
 
             content:
-`✅ Successfully reset **${user.username}**'s **${gamemode.toUpperCase()}** tier.`,
+`✅ Successfully reset **${user.username}**'s tier.
+
+🏆 New Tier: **Unranked**`,
 
             ephemeral: true
 
