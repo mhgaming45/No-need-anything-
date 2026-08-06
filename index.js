@@ -1,112 +1,94 @@
-import "dotenv/config";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+require("dotenv").config();
 
-import {
+const fs = require("fs");
+const path = require("path");
+
+const {
     Client,
     Collection,
     GatewayIntentBits,
     Partials
-} from "discord.js";
+} = require("discord.js");
 
-// Required for __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const registerCommands = require("./commands/registerCommands");
 
 const client = new Client({
+
     intents: [
+
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
+
     ],
+
     partials: [
+
         Partials.Channel,
         Partials.Message,
-        Partials.User
+        Partials.User,
+        Partials.GuildMember
+
     ]
+
 });
 
 client.commands = new Collection();
 client.buttons = new Collection();
 client.modals = new Collection();
 
-// ======================
-// JSON DATABASE
-// ======================
-import database from "./database/database.js";
-client.db = database;
+require("./handlers/commandHandler")(client);
+require("./handlers/eventHandler")(client);
 
-// ======================
-// LOAD COMMANDS
-// ======================
-const commandsPath = path.join(__dirname, "commands");
+// Load Buttons
+const buttonFiles = fs.readdirSync(
+    path.join(__dirname, "buttons")
+);
 
-if (fs.existsSync(commandsPath)) {
-    const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+for (const file of buttonFiles) {
 
-    for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = await import(`file://${filePath}`);
-        if (command.default && command.default.data) {
-            client.commands.set(command.default.data.name, command.default);
-        }
-    }
+    if (!file.endsWith(".js")) continue;
+
+    const button = require(`./buttons/${file}`);
+
+    client.buttons.set(button.id, button);
+
+    console.log(`✅ Loaded Button: ${button.id}`);
+
 }
 
-// ======================
-// LOAD BUTTONS
-// ======================
-const buttonsPath = path.join(__dirname, "buttons");
+// Load Modals
+const modalFiles = fs.readdirSync(
+    path.join(__dirname, "modals")
+);
 
-if (fs.existsSync(buttonsPath)) {
-    const buttonFiles = fs.readdirSync(buttonsPath).filter(f => f.endsWith(".js"));
+for (const file of modalFiles) {
 
-    for (const file of buttonFiles) {
-        const filePath = path.join(buttonsPath, file);
-        const button = await import(`file://${filePath}`);
-        client.buttons.set(button.default.id, button.default);
-    }
+    if (!file.endsWith(".js")) continue;
+
+    const modal = require(`./modals/${file}`);
+
+    client.modals.set(modal.id, modal);
+
+    console.log(`✅ Loaded Modal: ${modal.id}`);
+
 }
 
-// ======================
-// LOAD MODALS
-// ======================
-const modalsPath = path.join(__dirname, "modals");
+// Ready
+client.once("ready", async () => {
 
-if (fs.existsSync(modalsPath)) {
-    const modalFiles = fs.readdirSync(modalsPath).filter(f => f.endsWith(".js"));
+    console.log("=================================");
+    console.log(`✅ Logged in as ${client.user.tag}`);
+    console.log(`🌍 Servers : ${client.guilds.cache.size}`);
+    console.log("=================================");
 
-    for (const file of modalFiles) {
-        const filePath = path.join(modalsPath, file);
-        const modal = await import(`file://${filePath}`);
-        client.modals.set(modal.default.id, modal.default);
-    }
-}
+    await registerCommands(client);
 
-// ======================
-// LOAD EVENTS
-// ======================
-const eventsPath = path.join(__dirname, "events");
+});
 
-if (fs.existsSync(eventsPath)) {
-    const eventFiles = fs.readdirSync(eventsPath).filter(f => f.endsWith(".js"));
+// Error Handling
+process.on("unhandledRejection", console.error);
+process.on("uncaughtException", console.error);
 
-    for (const file of eventFiles) {
-        const filePath = path.join(eventsPath, file);
-        const eventModule = await import(`file://${filePath}`);
-        const event = eventModule.default;
-
-        if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args, client));
-        } else {
-            client.on(event.name, (...args) => event.execute(...args, client));
-        }
-    }
-}
-
-// ======================
-// LOGIN
-// ======================
 client.login(process.env.TOKEN);
