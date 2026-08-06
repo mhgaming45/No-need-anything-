@@ -1,103 +1,64 @@
 module.exports = {
-
     name: "interactionCreate",
 
     async execute(interaction, client) {
 
-        // Slash Commands
-        if (interaction.isChatInputCommand()) {
+        try {
 
-            const command = client.commands.get(interaction.commandName);
+            // Slash Commands
+            if (interaction.isChatInputCommand()) {
 
-            if (!command) return;
+                const command = client.commands.get(interaction.commandName);
 
-            try {
+                if (!command) return;
 
-                await command.execute(interaction, client);
-
-            } catch (err) {
-
-                console.error(err);
-
-                if (interaction.replied || interaction.deferred) {
-
-                    await interaction.followUp({
-                        content: "❌ An error occurred while executing this command.",
-                        ephemeral: true
-                    });
-
-                } else {
-
-                    await interaction.reply({
-                        content: "❌ An error occurred while executing this command.",
-                        ephemeral: true
-                    });
-
-                }
+                return await command.execute(interaction, client);
 
             }
 
-            return;
+            // Buttons
+            if (interaction.isButton()) {
 
-        }
+                const id = interaction.customId.split("_")[0];
 
-        // Buttons
-        if (interaction.isButton()) {
+                const button = client.buttons.get(id);
 
-            const id = interaction.customId.split("_")[0];
+                if (!button) return;
 
-            const button = client.buttons.get(id);
-
-            if (!button) return;
-
-            try {
-
-                await button.execute(interaction, client);
-
-            } catch (err) {
-
-                console.error(err);
-
-                if (!interaction.replied) {
-
-                    await interaction.reply({
-                        content: "❌ Button error.",
-                        ephemeral: true
-                    });
-
-                }
+                return await button.execute(interaction, client);
 
             }
 
-            return;
+            // Modals
+            if (interaction.isModalSubmit()) {
 
-        }
+                const id = interaction.customId.split("_")[0];
 
-        // Modals
-        if (interaction.isModalSubmit()) {
+                const modal = client.modals.get(id);
 
-            const id = interaction.customId.split("_")[0];
+                if (!modal) return;
 
-            const modal = client.modals.get(id);
+                return await modal.execute(interaction, client);
 
-            if (!modal) return;
+            }
 
-            try {
+        } catch (err) {
 
-                await modal.execute(interaction, client);
+            console.error(err);
 
-            } catch (err) {
+            if (interaction.replied || interaction.deferred) {
 
-                console.error(err);
+                await interaction.followUp({
+                    content: "❌ An error occurred.",
+                    ephemeral: true
+                }).catch(() => {});
 
-                if (!interaction.replied) {
+            } else {
 
-                    await interaction.reply({
-                        content: "❌ Modal error.",
-                        ephemeral: true
-                    });
-
-                }
+                await interaction.reply({
+                    content: "❌ An error occurred.",
+                    ephemeral: true
+                }).catch(() => {});
 
             }
 
