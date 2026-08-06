@@ -9,29 +9,19 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("profile")
-        .setDescription("View player profile")
-        .addUserOption(option =>
-            option
-                .setName("player")
-                .setDescription("Select player")
-                .setRequired(false)
-        ),
+        .setDescription("View your profile"),
 
     async execute(interaction) {
 
-        const user =
-            interaction.options.getUser("player") ||
-            interaction.user;
-
         const db = load();
 
-        const player = db.players[user.id];
+        const player = db.players?.[interaction.user.id];
 
         if (!player) {
 
             return interaction.reply({
 
-                content: "❌ Player not registered.",
+                content: "❌ You are not registered.",
 
                 ephemeral: true
 
@@ -39,45 +29,20 @@ module.exports = {
 
         }
 
-        let tierText = "";
-
-        const gamemodes = [
-            "uhc",
-            "nethpot",
-            "vanilla",
-            "smp",
-            "sword",
-            "mace",
-            "axe"
-        ];
-
-        for (const mode of gamemodes) {
-
-            const tier =
-                db.tiers?.[user.id]?.[mode] || "Unranked";
-
-            tierText += `**${mode.toUpperCase()}** : ${tier}\n`;
-
-        }
-
         const embed = new EmbedBuilder()
 
-            .setColor("#5865F2")
+            .setColor("#FFD700")
 
-            .setAuthor({
+            .setTitle("👤 Player Profile")
 
-                name: user.username,
-
-                iconURL: user.displayAvatarURL()
-
-            })
-
-            .setThumbnail(user.displayAvatarURL())
+            .setThumbnail(
+                `https://mc-heads.net/avatar/${player.ign}/256`
+            )
 
             .addFields(
 
                 {
-                    name: "👤 Minecraft Username",
+                    name: "🎮 IGN",
                     value: player.ign,
                     inline: true
                 },
@@ -95,33 +60,28 @@ module.exports = {
                 },
 
                 {
-                    name: "🏆 Wins",
-                    value: `${player.wins || 0}`,
+                    name: "🏆 Tier",
+                    value: player.tier || "Unranked",
+                    inline: true
+                },
+
+                {
+                    name: "✅ Wins",
+                    value: String(player.wins || 0),
                     inline: true
                 },
 
                 {
                     name: "❌ Losses",
-                    value: `${player.losses || 0}`,
+                    value: String(player.losses || 0),
                     inline: true
-                },
-
-                {
-                    name: "⭐ ELO",
-                    value: `${player.elo || 1000}`,
-                    inline: true
-                },
-
-                {
-                    name: "🎮 Gamemode Tiers",
-                    value: tierText
                 }
 
             )
 
             .setFooter({
 
-                text: "Developed by MHGAMING"
+                text: "⚡ Developed by MHGAMING"
 
             })
 
@@ -129,7 +89,9 @@ module.exports = {
 
         await interaction.reply({
 
-            embeds: [embed]
+            embeds: [embed],
+
+            ephemeral: true
 
         });
 
