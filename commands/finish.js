@@ -1,5 +1,7 @@
 const {
-    SlashCommandBuilder
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    EmbedBuilder
 } = require("discord.js");
 
 const { load, save } = require("../database/database");
@@ -9,35 +11,50 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName("finish")
-        .setDescription("Finish the current test"),
+        .setDescription("Finish current test")
+        .setDefaultMemberPermissions(
+            PermissionFlagsBits.ManageGuild
+        )
+        .addStringOption(option =>
+            option
+                .setName("gamemode")
+                .setDescription("Select Gamemode")
+                .setRequired(true)
+                .addChoices(
+                    { name: "UHC", value: "uhc" },
+                    { name: "NethPot", value: "nethpot" },
+                    { name: "Vanilla", value: "vanilla" },
+                    { name: "SMP", value: "smp" },
+                    { name: "Sword", value: "sword" },
+                    { name: "Mace", value: "mace" },
+                    { name: "Axe", value: "axe" }
+                )
+        ),
 
     async execute(interaction, client) {
 
-        if (!interaction.member.permissions.has("ManageGuild")) {
-            return interaction.reply({
-                content: "❌ You don't have permission.",
-                ephemeral: true
-            });
-        }
+        const gamemode =
+            interaction.options.getString("gamemode");
 
         const db = load();
 
-        const gamemode = Object.keys(db.active_tests || {}).find(
-            g => db.active_tests[g]?.testerId === interaction.user.id
-        );
+        if (!db.active_tests)
+            db.active_tests = {};
 
-        if (!gamemode) {
+        const active = db.active_tests[gamemode];
+
+        if (!active) {
+
             return interaction.reply({
-                content: "❌ No active test found.",
+
+                content:
+                    "❌ No active test found for this gamemode.",
+
                 ephemeral: true
+
             });
+
         }
-
-        const playerId = db.active_tests[gamemode].playerId;
-
-        db.queue = db.queue.filter(
-            q => q.userId !== playerId
-        );
 
         delete db.active_tests[gamemode];
 
@@ -45,9 +62,22 @@ module.exports = {
 
         await updateQueue(client, gamemode);
 
+        const embed = new EmbedBuilder()
+
+            .setColor("Green")
+
+            .setTitle("✅ Test Finished")
+
+            .setDescription(
+                `The current **${gamemode.toUpperCase()}** test has been finished.\n\nYou can now use **/next** to test the next player.`
+            )
+
+            .setTimestamp();
+
         return interaction.reply({
-            content: `✅ Test finished.\nPlayer removed from ${gamemode.toUpperCase()} queue.`,
-            ephemeral: true
+
+            embeds: [embed]
+
         });
 
     }
